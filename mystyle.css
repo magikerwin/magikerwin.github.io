@@ -2,7 +2,7 @@
 :root {
     --main-white: #f0f0f0;
     --main-red: #33c0b9;
-    --main-blue: #45567d;
+    --main-blue: #455d7d;
     --main-gray: #303841;
   }
   
@@ -191,37 +191,65 @@
     }
   }
 
-  .experience-logo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /*minmax(320px, 1fr)*/
-    grid-gap: 4rem;
-    width: 100%;
-    max-width: 1280px; /*1280px*/
-    margin: 0 auto;
-    margin-bottom: 6rem;
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
   }
-
-  .experience-logo-image {
+  
+  .timeline::before {
+    position: absolute;
+    content: "";
     display: block;
-    margin-left: auto;
-    margin-right: auto;
-    height: 15rem;
-    width: auto;
-    object-fit: cover;
-    padding: 5px 5px;
+    width: 0.4rem;
+    height: 100%;
+    background: #888;
+    z-index: 1;
+  }
+  
+  .date {
+    padding-bottom: 1rem;
   }
 
-  .experience-bioLogoColumn {
-    display: inline-block;
-    text-align: center;
-    vertical-align: middle;
-    padding: 10px 10px;
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 1fr min-content 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "content-right image content-left";
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .timeline-item + .timeline-item {
+    margin-top: 5rem;
+  }
+  
+  .timeline-wrap {
+    grid-area: content-left;
+    padding: 1rem;
+    max-width: 50rem;
+    text-align: left;
+  }
+  
+  .timeline-item:nth-child(even) .timeline-wrap {
+    grid-area: content-right;
   }
 
-  .experience-logo-line {
-    line-height: 28px;
-    letter-spacing: 0.5px;
-    text-align: center;
+  .timeline-img {
+    width: 16rem;
+    height: auto;
+    background: rgb(255, 255, 255);
+    border: 0.5rem solid #888;
+    border-radius: 20%;
+    grid-area: image;
+    overflow: hidden;
+  }
+  
+  .timeline-img > timeline-img {
+    width: 100%;
+    height: auto;
   }
 
   /* Certifications section */
@@ -382,12 +410,12 @@
     justify-content: center;
     width: 100%;
     max-width: 980px;
-    margin-top: 4rem;
+    margin-top: 4.5rem;
     flex-wrap: wrap;
   }
   
   .contact-details {
-    font-size: 2.4rem;
+    font-size: 2.6rem;
     text-shadow: 2px 2px 1px #1f1f1f;
     transition: transform 0.3s ease-out;
   }
