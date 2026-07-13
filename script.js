@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ],
                 [
                     "📊 System Performance Monitor:",
-                    "  [GPU] Training Model -> Status: Severe Overfitting 📈",
-                    "  [BIO] Training Body  -> Status: Severe Under-recovering 🧘♂️"
+                    "  [GPU] Training Model -> Status: Overfitting (Failed to generalize to test data) 📈",
+                    "  [BIO] Training Body  -> Status: Underfitting (Failed to generalize to hill climbs) 🏔️"
                 ],
                 [
                     "📉 Training Update: Epoch 150/150",
