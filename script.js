@@ -28,21 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const speechBubble = document.getElementById('speech-bubble');
 
     const devQuotes = [
-        // "Deep Learning is just linear algebra with better marketing. 🧠",
-        // "Computer Vision: teaching computers to see, yet they still can't find my keys. 🔑",
-        // "Honestly? Running a marathon is easier than debugging legacy code. 💀",
-        // "Object detection is easy. Detecting why my code broke is hard. 🔍",
-        // "Overfitting in machine learning, under-recovering in triathlons. 🧘‍♂️",
-        // "Local minimum: both a math concept and my mood when training fails. 📉",
-        // "99% accuracy? I must have a bug. 😅"
-        "Swimming 1500m: Swallowed lake water. Fatal: Unhandled input stream. 🏊‍♂️",
-        "Biking 40km: Max wattage on hills. CPU throttling, legs overfitting. 🚴‍♂️",
-        "Running 10km: Battery 10%. Executing banana_gel.sh to avoid meltdown. 🏃‍♂️"
+        "🏊‍♂️ Swimming 1500m :<br>Swallowed lake water. Fatal: Unhandled input stream.",
+        "🚴‍♂️ Biking 40km :<br>Max wattage on hills. CPU throttling, legs overfitting.",
+        "🏃‍♂️ Running 10km :<br>Battery 10%. Executing banana_gel.sh to avoid meltdown."
     ];
 
     function showRandomQuote() {
         const randomIndex = Math.floor(Math.random() * devQuotes.length);
-        speechBubble.textContent = devQuotes[randomIndex];
+        speechBubble.innerHTML = devQuotes[randomIndex];
     }
 
     if (headShot && speechBubble) {
