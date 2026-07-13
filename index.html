@@ -46,53 +46,54 @@
     <!-- START WELCOME SECTION -->
 
     <section id="welcome" class="welcome-section">
+        <div class="welcome-grid">
+            <!-- Left Column: Profile Card & Bio -->
+            <div class="welcome-profile">
+                <h1>Hey I'm Kuan-Ying (Kerwin)</h1>
+                <p>a software developer</p>
 
-        <h1 style="font-size: 7rem;">Hey I'm Kuan-Ying (Kerwin)</h1>
+                <div class="avatar-container">
+                    <div class="speech-bubble" id="speech-bubble">Hi there! Hover me for some fun.</div>
+                    <img class="head-image" id="head_shot" src="images/head_shot.png" alt="Kuan-Ying Profile Shot">
+                </div>
 
-        <p>a software developer</p>
-
-        <div class="avatar-container">
-            <div class="speech-bubble" id="speech-bubble">Hi there! Hover me for some fun.</div>
-            <img class="head-image" id="head_shot" src="images/head_shot.png" alt="Kuan-Ying Profile Shot">
-        </div>
-
-        <p style="color: #ffffff;
-           font-size: 3rem;
-           max-width: 75rem;
-           text-align:center;">
-            By day, I wrangle AI/ML for a living, turning black boxes into real-world applications. ✨
-            <br>
-            By night, I train for triathlons until I completely forget what a terminal looks like. 🏊‍♂️🚴‍♂️🏃
-        </p>
-
-        <!-- Interactive Terminal CLI -->
-        <div class="terminal-container">
-            <div class="terminal-header">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">kuanying@dev-terminal:~</span>
+                <p class="bio-text">
+                    By day, I wrangle <span class="highlight-day">AI/ML</span> for a living, turning black boxes into real-world applications.
+                    <br><br>
+                    By night, I train for <span class="highlight-night">triathlons</span> until I completely forget what a terminal looks like.
+                </p>
             </div>
-            <div class="terminal-body" id="terminal-body">
-                <div class="terminal-line">Welcome to the interactive console!</div>
-                <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
-                <div class="terminal-line input-line">
-                    <span class="prompt">kuanying$</span>
-                    <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
+
+            <!-- Right Column: Interactive CLI -->
+            <div class="welcome-terminal-column">
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="terminal-title">kuanying@dev-terminal:~</span>
+                    </div>
+                    <div class="terminal-body" id="terminal-body">
+                        <div class="terminal-line">Welcome to the interactive console!</div>
+                        <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
+                        <div class="terminal-line input-line">
+                            <span class="prompt">kuanying$</span>
+                            <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Buttons for Mobile/Click support -->
+                <div class="terminal-quick-btns">
+                    <button class="terminal-btn" data-cmd="help">help</button>
+                    <button class="terminal-btn" data-cmd="skills">skills</button>
+                    <button class="terminal-btn" data-cmd="joke">joke</button>
+                    <button class="terminal-btn" data-cmd="coffee">coffee</button>
+                    <button class="terminal-btn" data-cmd="hack">hack</button>
+                    <button class="terminal-btn" data-cmd="clear">clear</button>
                 </div>
             </div>
         </div>
-
-        <!-- Quick Buttons for Mobile/Click support -->
-        <div class="terminal-quick-btns">
-            <button class="terminal-btn" data-cmd="help">help</button>
-            <button class="terminal-btn" data-cmd="skills">skills</button>
-            <button class="terminal-btn" data-cmd="joke">joke</button>
-            <button class="terminal-btn" data-cmd="coffee">coffee</button>
-            <button class="terminal-btn" data-cmd="hack">hack</button>
-            <button class="terminal-btn" data-cmd="clear">clear</button>
-        </div>
-
     </section>
 
     <!-- END WELCOME SECTION-->
