@@ -46,7 +46,10 @@
     
     <p>a software developer</p>
     
-    <img class="head-image" id="head_shot" src="images/head_shot.png">
+    <div class="avatar-container">
+        <div class="speech-bubble" id="speech-bubble">Hi there! Hover me for some fun.</div>
+        <img class="head-image" id="head_shot" src="images/head_shot.png" alt="Kuan-Ying Profile Shot">
+    </div>
 
     <p 
     style="color: #ffffff;
@@ -56,6 +59,34 @@
     Over the past few years, I've been working on several Computer Vision and Deep Learning projects. <br>
     Skilled in Python and C++.
     </p>
+
+    <!-- Interactive Terminal CLI -->
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">kuanying@dev-terminal:~</span>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <div class="terminal-line">Welcome to the interactive console!</div>
+            <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
+            <div class="terminal-line input-line">
+                <span class="prompt">kuanying$</span>
+                <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Buttons for Mobile/Click support -->
+    <div class="terminal-quick-btns">
+        <button class="terminal-btn" data-cmd="help">help</button>
+        <button class="terminal-btn" data-cmd="skills">skills</button>
+        <button class="terminal-btn" data-cmd="joke">joke</button>
+        <button class="terminal-btn" data-cmd="coffee">coffee</button>
+        <button class="terminal-btn" data-cmd="hack">hack</button>
+        <button class="terminal-btn" data-cmd="clear">clear</button>
+    </div>
 
 </section>
 
