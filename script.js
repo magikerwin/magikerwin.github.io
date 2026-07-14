@@ -185,9 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         terminalBody.addEventListener('click', () => {
             terminalInput.focus();
         });
-    }
-
-    // Connect quick buttons
+    }    // Connect quick buttons
     quickBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const cmd = btn.getAttribute('data-cmd');
@@ -195,5 +193,43 @@ document.addEventListener('DOMContentLoaded', () => {
             if (terminalInput) terminalInput.focus();
         });
     });
-});
 
+    // ----------------------------------------------------
+    // 4. MOBILE NAVIGATION MENU TOGGLE
+    // ----------------------------------------------------
+    const navToggle = document.getElementById('nav-toggle');
+    const navList = document.getElementById('nav-list');
+
+    if (navToggle && navList) {
+        navToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navList.classList.toggle('active');
+            const icon = navToggle.querySelector('i');
+            if (navList.classList.contains('active')) {
+                icon.className = 'fas fa-times';
+            } else {
+                icon.className = 'fas fa-bars';
+            }
+        });
+
+        // Close menu drawer when clicking outside it or on a link
+        document.addEventListener('click', (e) => {
+            if (!navList.contains(e.target) && e.target !== navToggle && !navToggle.contains(e.target)) {
+                if (navList.classList.contains('active')) {
+                    navList.classList.remove('active');
+                    const icon = navToggle.querySelector('i');
+                    if (icon) icon.className = 'fas fa-bars';
+                }
+            }
+        });
+
+        const navLinks = navList.querySelectorAll('a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navList.classList.remove('active');
+                const icon = navToggle.querySelector('i');
+                if (icon) icon.className = 'fas fa-bars';
+            });
+        });
+    }
+});
