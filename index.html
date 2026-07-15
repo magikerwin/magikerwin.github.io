@@ -64,33 +64,6 @@
             By night, I train for <span class="highlight-night">triathlons</span> until I completely forget what a terminal looks like.
         </p>
 
-        <!-- Interactive Terminal CLI -->
-        <div class="terminal-container">
-            <div class="terminal-header">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">kuanying@dev-terminal:~</span>
-            </div>
-            <div class="terminal-body" id="terminal-body">
-                <div class="terminal-line">Welcome to the interactive console!</div>
-                <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
-                <div class="terminal-line input-line">
-                    <span class="prompt">kuanying$</span>
-                    <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Buttons for Mobile/Click support -->
-        <div class="terminal-quick-btns">
-            <button class="terminal-btn" data-cmd="help">help</button>
-            <button class="terminal-btn" data-cmd="skills">skills</button>
-            <button class="terminal-btn" data-cmd="joke">joke</button>
-            <button class="terminal-btn" data-cmd="coffee">coffee</button>
-            <button class="terminal-btn" data-cmd="hack">hack</button>
-            <button class="terminal-btn" data-cmd="clear">clear</button>
-        </div>
     </section>
 
     <!-- END WELCOME SECTION-->
@@ -462,6 +435,46 @@
     </section>
 
     <!-- END CONTACT SECTION -->
+
+    <!-- START FLOATING TERMINAL -->
+    <div class="floating-terminal-wrapper" id="floating-terminal">
+        <button class="terminal-trigger-bubble" id="terminal-trigger" aria-label="Open Terminal CLI">
+            <i class="fas fa-terminal"></i>
+            <span class="bubble-tooltip">Try CLI console!</span>
+        </button>
+
+        <div class="terminal-container" id="terminal-popup">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                </div>
+                <span class="terminal-title">kuanying@dev-terminal:~</span>
+                <button class="terminal-close-btn" id="terminal-close" aria-label="Close Terminal CLI">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+                <div class="terminal-line">Welcome to the interactive console!</div>
+                <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
+                <div class="terminal-line input-line">
+                    <span class="prompt">kuanying$</span>
+                    <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
+                </div>
+            </div>
+            <!-- Quick Buttons inside popup -->
+            <div class="terminal-quick-btns">
+                <button class="terminal-btn" data-cmd="help">help</button>
+                <button class="terminal-btn" data-cmd="skills">skills</button>
+                <button class="terminal-btn" data-cmd="joke">joke</button>
+                <button class="terminal-btn" data-cmd="coffee">coffee</button>
+                <button class="terminal-btn" data-cmd="hack">hack</button>
+                <button class="terminal-btn" data-cmd="clear">clear</button>
+            </div>
+        </div>
+    </div>
+    <!-- END FLOATING TERMINAL -->
 
 </body>
 

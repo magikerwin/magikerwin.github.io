@@ -60,6 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const terminalInput = document.getElementById('terminal-input');
     const terminalBody = document.getElementById('terminal-body');
     const quickBtns = document.querySelectorAll('.terminal-btn');
+    const terminalTrigger = document.getElementById('terminal-trigger');
+    const terminalPopup = document.getElementById('terminal-popup');
+    const terminalClose = document.getElementById('terminal-close');
+    const floatingWrapper = document.getElementById('floating-terminal');
     let coffeeCount = 0;
 
     const commands = {
@@ -185,13 +189,54 @@ document.addEventListener('DOMContentLoaded', () => {
         terminalBody.addEventListener('click', () => {
             terminalInput.focus();
         });
-    }    // Connect quick buttons
+    }
+
+    // Connect quick buttons
     quickBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const cmd = btn.getAttribute('data-cmd');
             processCommand(cmd);
             if (terminalInput) terminalInput.focus();
         });
+    });
+
+    // Toggle terminal on trigger click
+    if (terminalTrigger && terminalPopup) {
+        terminalTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            terminalPopup.classList.toggle('active');
+            if (terminalPopup.classList.contains('active')) {
+                if (terminalInput) {
+                    setTimeout(() => {
+                        terminalInput.focus();
+                    }, 50); // slight timeout to allow transition to start and focus successfully
+                }
+            }
+        });
+    }
+
+    // Close terminal on close button click
+    if (terminalClose && terminalPopup) {
+        terminalClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            terminalPopup.classList.remove('active');
+        });
+    }
+
+    // Close terminal when clicking outside
+    document.addEventListener('click', (e) => {
+        if (terminalPopup && terminalPopup.classList.contains('active')) {
+            if (floatingWrapper && !floatingWrapper.contains(e.target)) {
+                terminalPopup.classList.remove('active');
+            }
+        }
+    });
+
+    // Close terminal when pressing Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && terminalPopup && terminalPopup.classList.contains('active')) {
+            terminalPopup.classList.remove('active');
+        }
     });
 
     // ----------------------------------------------------
