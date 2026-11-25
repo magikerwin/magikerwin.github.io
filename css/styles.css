@@ -637,7 +637,7 @@ h2 {
 .poster-plaque { display: flex; flex-direction: column; gap: 3px; padding: 0 2px; }
 .poster-meta {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
   font-family: var(--mono);
@@ -646,6 +646,8 @@ h2 {
   text-transform: uppercase;
   color: var(--muted);
 }
+.poster-meta > span:first-child { min-width: 0; }
+.poster-meta > span:last-child { white-space: nowrap; flex-shrink: 0; }
 .poster-num { color: var(--accent); font-weight: 700; }
 .poster-title { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; transition: color 140ms; }
 .poster-card:hover .poster-title { color: var(--accent); }
@@ -809,7 +811,7 @@ footer {
   .dna-stage { margin-top: -165px; padding-top: 18px; }
   .exhibition-hero { padding: 14px 18px 20px; }
   .top-nav { gap: 12px; }
-  .top-nav a { font-size: 10.5px; letter-spacing: 0.06em; }
+  .top-nav a { font-size: 10.5px; letter-spacing: 0.06em; padding: 8px 2px; }
   .top-nav .nav-secondary { display: none; }
   .hero-intro { margin-top: 8px; }
   .telemetry-pill { font-size: 8.8px; padding: 3.5px 10px; margin-bottom: 8px; }
@@ -819,12 +821,16 @@ footer {
   .stage-3d { min-height: 250px; perspective: 950px; }
   .ring-caption { border-radius: 16px; padding: 8px 12px; gap: 6px 10px; }
   .shell { padding: 0 16px; }
-  .helix-spine { left: 8px; width: 28px; transform: none; }
-  .dna-head { grid-template-columns: 1fr; padding-left: 44px; gap: 10px; }
+  .helix-spine { left: 4px; width: 26px; transform: none; }
+  .dna-head { grid-template-columns: 1fr; padding-left: 50px; gap: 10px; }
   .dna-head-right { align-items: flex-start; text-align: left; padding-left: 0; }
-  .helix-pair { grid-template-columns: 1fr; gap: 14px; padding-left: 44px; }
+  .helix-pair { grid-template-columns: 1fr; gap: 14px; padding-left: 50px; }
   .helix-center-pin { justify-content: flex-start; order: -1; }
+  .dna-chip { padding: 7px 11px; }
+  .f-tab { padding: 8px 13px; }
+  .c-tab { padding: 7px 12px; }
   .poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  .poster-meta { font-size: 9.5px; gap: 6px; letter-spacing: 0.04em; }
   .cert-mini-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {

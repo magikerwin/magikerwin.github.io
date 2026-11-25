@@ -60,4 +60,4 @@ python3 -m http.server 8000
 # Open http://localhost:8000
 ```
 
-To deploy to **`https://magikerwin.github.io/`**, copy the contents of `magikerwin-site/` into your `magikerwin.github.io` repository root and push to `main`.
+To deploy to **`https://magikerwin.github.io/`**, push changes to the `master` branch of `magikerwin/magikerwin.github.io`.

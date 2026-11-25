@@ -35,7 +35,7 @@ export const SITE_DATA = {
     location: "Taipei, Taiwan",
     email: "qwerzxcv98@gmail.com",
     portrait: "./images/head_shot.png",
-    yearsExp: "7+ yrs",
+    yearsExp: "8+ yrs",
     bioHtml:
       'Turning <strong>research</strong> into reliable software by day—training for <strong>triathlons</strong> by night.',
     links: {
