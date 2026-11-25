@@ -82,9 +82,9 @@ export function initRing3D(tiles) {
   function normDeg(deg) { return ((deg + 180) % 360 + 360) % 360 - 180; }
   function lerp(a, b, t) { return a + (b - a) * t; }
   function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-  function smoothstep(e0, e1, x) {
+  function smootherstep(e0, e1, x) {
     const t = Math.max(0, Math.min(1, (x - e0) / Math.max(e1 - e0, 1)));
-    return t * t * (3 - 2 * t);
+    return t * t * t * (t * (t * 6 - 15) + 10);
   }
   function shortestDelta(fromDeg, toDeg) { return ((toDeg - fromDeg + 540) % 360) - 180; }
   function snapToIndex(idx) { targetAngle = angle + shortestDelta(angle, -idx * STEP); vel = 0; }
@@ -106,18 +106,6 @@ export function initRing3D(tiles) {
     if (reducedMotion || !runway) return 0;
     const maxScroll = Math.max(runway.offsetHeight - window.innerHeight, 1);
     return Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
-  }
-
-  function smoothVerticalCurve(pts) {
-    if (pts.length < 2) return "";
-    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i];
-      const p1 = pts[i + 1];
-      const my = (p0.y + p1.y) / 2;
-      d += ` C${p0.x.toFixed(1)},${my.toFixed(1)} ${p1.x.toFixed(1)},${my.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
-    }
-    return d;
   }
 
   // Hover/Click tooltips on the color-coded project beads on the unified DNA spine
@@ -283,6 +271,83 @@ export function initRing3D(tiles) {
       const heroOp = e <= 0.08 ? 0 : Math.min((e - 0.08) / 0.42, 1);
       const funnelOp = heroOp * Math.min(Math.max((e - 0.06) / 0.34, 0), 1);
 
+      const lastA = strandA[strandA.length - 1];
+      const lastB = strandB[strandB.length - 1];
+      const yStart = (lastA.y + lastB.y) / 2;
+      const ySettleCx = Math.max(yStart + (isPhone ? 155 : 108), helixTopY + (isPhone ? 52 : 36));
+      const ySettleAmp = Math.max(yStart + (isPhone ? 115 : 96), helixTopY + (isPhone ? 24 : 32));
+
+      const offAX = lastA.x - (stageCx + Math.sin(bottomPhiRad) * dnaR);
+      const offBX = lastB.x - (stageCx - Math.sin(bottomPhiRad) * dnaR);
+      const offAY = lastA.y - yStart;
+      const offBY = lastB.y - yStart;
+
+      const freqHero = (46 * DEG) / Math.max(dnaDy, 48);
+      const freqLower = (Math.PI * 2) / 250;
+
+      const flowPtsA = [];
+      const flowPtsB = [];
+      let flowRungs = "";
+      let phi = bottomPhiRad;
+      const stepY = 6;
+      let rungAccum = 0;
+
+      for (let y = yStart; y <= helixBotY; y += stepY) {
+        const uCxRaw = smootherstep(yStart, ySettleCx, y);
+        const uCx = isPhone ? 1 - Math.pow(1 - uCxRaw, 1.45) : uCxRaw;
+        const uAmp = smootherstep(yStart, ySettleAmp, y);
+        const botClose = 1 - smootherstep(helixBotY - 56, helixBotY, y);
+        const cx = lerp(stageCx, spineCx, uCx);
+        const amp = lerp(dnaR, lowerAmp, uAmp) * botClose;
+        const s = Math.sin(phi);
+        const ax = cx + s * amp + offAX * (1 - uAmp);
+        const bx = cx - s * amp + offBX * (1 - uAmp);
+        const ay = y + offAY * (1 - uAmp);
+        const by = y + offBY * (1 - uAmp);
+
+        flowPtsA.push({ x: ax, y: ay, u: uAmp, s });
+        flowPtsB.push({ x: bx, y: by, u: uAmp, s });
+
+        rungAccum += stepY;
+        const rungGap = lerp(isPhone ? 30 : 26, 22, uAmp);
+        if (rungAccum >= rungGap && y > yStart + 14 && y < helixBotY - 38) {
+          rungAccum = 0;
+          const spread = Math.abs(s) * botClose;
+          if (spread > 0.16) {
+            const vis = y < helixTopY ? funnelOp : 1;
+            if (vis > 0.04) {
+              const rop = ((0.09 + spread * 0.24) * vis).toFixed(2);
+              flowRungs += `<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#14151A" stroke-opacity="${rop}" stroke-width="1.2"/>`;
+            }
+          }
+        }
+
+        phi += lerp(freqHero, freqLower, uAmp) * stepY;
+      }
+
+      if (flowPtsA.length > 0) {
+        flowPtsA.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
+        flowPtsB.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
+      }
+
+      function smoothBezierSlice(arr, from, to, tailGuide) {
+        if (to <= from || arr.length < 2) return "";
+        const last = Math.min(to, arr.length - 1);
+        let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
+        for (let k = from; k < last; k++) {
+          const p0 = arr[Math.max(0, k - 1)];
+          const p1 = arr[k];
+          const p2 = arr[k + 1];
+          const p3 = k + 2 < arr.length ? arr[k + 2] : (tailGuide || p2);
+          const c1x = p1.x + (p2.x - p0.x) / 6;
+          const c1y = p1.y + (p2.y - p0.y) / 6;
+          const c2x = p2.x - (p3.x - p1.x) / 6;
+          const c2y = p2.y - (p3.y - p1.y) / 6;
+          d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+        }
+        return d;
+      }
+
       let heroRungs = "";
       let heroStrandSvg = "";
       if (heroOp > 0.01) {
@@ -298,84 +363,22 @@ export function initRing3D(tiles) {
             <circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3" fill="#E8431F" fill-opacity="${(0.8 * heroOp).toFixed(2)}"/>
           `;
         }
+        const guideStep = Math.min(flowPtsA.length - 1, Math.max(2, Math.round(dnaDy / stepY)));
+        const guideA = flowPtsA[guideStep];
+        const guideB = flowPtsB[guideStep];
         heroStrandSvg = `
-          <path d="${smoothVerticalCurve(strandB)}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="${smoothVerticalCurve(strandA)}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="${smoothBezierSlice(strandB, 0, strandB.length - 1, guideB)}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="${smoothBezierSlice(strandA, 0, strandA.length - 1, guideA)}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
         `;
-      }
-
-      const lastA = strandA[strandA.length - 1];
-      const lastB = strandB[strandB.length - 1];
-      const yStart = (lastA.y + lastB.y) / 2;
-      const ySettle = Math.max(yStart + (isPhone ? 68 : 88), helixTopY + (isPhone ? 14 : 32));
-
-      const offAX = lastA.x - (stageCx + Math.sin(bottomPhiRad) * dnaR);
-      const offBX = lastB.x - (stageCx - Math.sin(bottomPhiRad) * dnaR);
-      const offAY = lastA.y - yStart;
-      const offBY = lastB.y - yStart;
-
-      const freqHero = (46 * DEG) / Math.max(dnaDy, 48);
-      const freqLower = (Math.PI * 2) / 250;
-
-      const flowPtsA = [];
-      const flowPtsB = [];
-      let flowRungs = "";
-      let phi = bottomPhiRad;
-      const stepY = 8;
-      let rungAccum = 0;
-
-      for (let y = yStart; y <= helixBotY; y += stepY) {
-        const u = smoothstep(yStart, ySettle, y);
-        const botClose = 1 - smoothstep(helixBotY - 56, helixBotY, y);
-        const cx = lerp(stageCx, spineCx, u);
-        const amp = lerp(dnaR, lowerAmp, u) * botClose;
-        const s = Math.sin(phi);
-        const ax = cx + s * amp + offAX * (1 - u);
-        const bx = cx - s * amp + offBX * (1 - u);
-        const ay = y + offAY * (1 - u);
-        const by = y + offBY * (1 - u);
-
-        flowPtsA.push({ x: ax, y: ay, u, s });
-        flowPtsB.push({ x: bx, y: by, u, s });
-
-        rungAccum += stepY;
-        const rungGap = lerp(26, 22, u);
-        if (rungAccum >= rungGap && y > yStart + 14 && y < helixBotY - 38) {
-          rungAccum = 0;
-          const spread = Math.abs(s) * botClose;
-          if (spread > 0.16) {
-            const vis = y < helixTopY ? funnelOp : 1;
-            if (vis > 0.04) {
-              const rop = ((0.09 + spread * 0.24) * vis).toFixed(2);
-              flowRungs += `<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#14151A" stroke-opacity="${rop}" stroke-width="1.2"/>`;
-            }
-          }
-        }
-
-        phi += lerp(freqHero, freqLower, u) * stepY;
-      }
-
-      if (flowPtsA.length > 0) {
-        flowPtsA.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
-        flowPtsB.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
       }
 
       let splitIdx = flowPtsA.findIndex((p) => p.y >= helixTopY);
       if (splitIdx < 1) splitIdx = 1;
 
-      function polyPath(arr, from, to) {
-        if (to <= from) return "";
-        let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
-        for (let k = from + 1; k <= to && k < arr.length; k++) {
-          d += ` L${arr[k].x.toFixed(1)},${arr[k].y.toFixed(1)}`;
-        }
-        return d;
-      }
-
-      const funnelPathA = funnelOp > 0.02 ? `<path d="${polyPath(flowPtsA, 0, splitIdx)}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
-      const funnelPathB = funnelOp > 0.02 ? `<path d="${polyPath(flowPtsB, 0, splitIdx)}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
-      const spinePathA = `<path d="${polyPath(flowPtsA, splitIdx, flowPtsA.length - 1)}" fill="none" stroke="#14151A" stroke-opacity="0.88" stroke-width="2" stroke-linecap="round"/>`;
-      const spinePathB = `<path d="${polyPath(flowPtsB, splitIdx, flowPtsB.length - 1)}" fill="none" stroke="#E8431F" stroke-opacity="0.84" stroke-width="2" stroke-linecap="round"/>`;
+      const funnelPathA = funnelOp > 0.02 ? `<path d="${smoothBezierSlice(flowPtsA, 0, splitIdx)}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
+      const funnelPathB = funnelOp > 0.02 ? `<path d="${smoothBezierSlice(flowPtsB, 0, splitIdx)}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
+      const spinePathA = `<path d="${smoothBezierSlice(flowPtsA, splitIdx, flowPtsA.length - 1)}" fill="none" stroke="#14151A" stroke-opacity="0.88" stroke-width="2" stroke-linecap="round"/>`;
+      const spinePathB = `<path d="${smoothBezierSlice(flowPtsB, splitIdx, flowPtsB.length - 1)}" fill="none" stroke="#E8431F" stroke-opacity="0.84" stroke-width="2" stroke-linecap="round"/>`;
       const termDot = flowPtsA.length > 2
         ? `<circle cx="${spineCx.toFixed(1)}" cy="${helixBotY.toFixed(1)}" r="4.4" fill="#E8431F" stroke="#F4F0E6" stroke-width="2"/>`
         : "";

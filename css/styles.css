@@ -808,7 +808,7 @@ footer {
 }
 @media (max-width: 680px) {
   .hero-runway { height: 136svh; }
-  .dna-stage { margin-top: -165px; padding-top: 18px; }
+  .dna-stage { margin-top: -128px; padding-top: 18px; }
   .exhibition-hero { padding: 14px 18px 20px; }
   .top-nav { gap: 12px; }
   .top-nav a { font-size: 10.5px; letter-spacing: 0.06em; padding: 8px 2px; }
