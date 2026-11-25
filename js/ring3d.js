@@ -104,7 +104,8 @@ export function initRing3D(tiles) {
 
   function getScrollProgress() {
     if (reducedMotion || !runway) return 0;
-    const maxScroll = Math.max(runway.offsetHeight - window.innerHeight, 1);
+    const stickyH = heroEl ? heroEl.offsetHeight : window.innerHeight;
+    const maxScroll = Math.max((runway.offsetHeight - stickyH) * 0.78, 100);
     return Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
   }
 
@@ -202,7 +203,7 @@ export function initRing3D(tiles) {
     const dnaR = Math.min(hw * (isPhone ? 0.24 : 0.13), isPhone ? 80 : 110, dnaDy * 1.55);
     const dnaScale = lerp(
       Math.min(0.48, (compactDy * 0.94) / tileW),
-      Math.min(0.56, (expandedDy * 0.88) / tileW),
+      Math.min(0.60, (expandedDy * 0.90) / tileW),
       e
     );
     const dnaYShift = e * ((heroTopWorld + hh * (isPhone ? 0.40 : 0.41)) - stageCy);
@@ -269,14 +270,14 @@ export function initRing3D(tiles) {
       const helixTopY = helixRect.top - worldRect.top;
       const helixBotY = helixRect.bottom - worldRect.top - 16;
 
-      const heroOp = e <= 0.08 ? 0 : Math.min((e - 0.08) / 0.42, 1);
-      const funnelOp = heroOp * Math.min(Math.max((e - 0.06) / 0.34, 0), 1);
+      const heroOp = e <= 0.28 ? 0 : Math.min((e - 0.28) / 0.52, 1);
+      const funnelOp = heroOp * Math.min(Math.max((e - 0.24) / 0.44, 0), 1);
 
       const lastA = strandA[strandA.length - 1];
       const lastB = strandB[strandB.length - 1];
       const yStart = (lastA.y + lastB.y) / 2;
-      const ySettleCx = Math.max(yStart + (isPhone ? 155 : 108), helixTopY + (isPhone ? 52 : 36));
-      const ySettleAmp = Math.max(yStart + (isPhone ? 115 : 96), helixTopY + (isPhone ? 24 : 32));
+      const ySettleCx = Math.max(yStart + (isPhone ? 155 : 130), helixTopY + (isPhone ? 52 : 48));
+      const ySettleAmp = Math.max(yStart + (isPhone ? 120 : 175), helixTopY + (isPhone ? 24 : 90));
 
       const dnaRProj = dnaR * (persp / Math.max(persp + 35, 120));
       const offAX = lastA.x - (stageCx + Math.sin(bottomPhiRad) * dnaRProj);

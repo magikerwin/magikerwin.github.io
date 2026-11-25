@@ -47,14 +47,14 @@ body {
    HERO RUNWAY: 3D EXHIBITION RING -> VERTICAL (TOP-DOWN) 3D DNA HELIX
    ===================================================================== */
 .hero-runway {
-  height: 132svh;
+  height: clamp(500px, 132svh, 1260px);
   position: relative;
-  background: radial-gradient(circle at 50% 40%, #fffdf8 0%, #f9f6ee 42%, #f4f0e6 74%, #f4f0e6 100%);
+  background: radial-gradient(ellipse 60% 55% at 50% 40%, #fffdf8 0%, #f9f6ee 48%, #f4f0e6 92%, #f4f0e6 100%);
 }
 .exhibition-hero {
   position: sticky;
   top: 0;
-  height: 100svh;
+  height: min(100svh, 1020px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -319,7 +319,7 @@ h1 {
 .dna-stage {
   position: relative;
   z-index: 14;
-  margin-top: -155px;
+  margin-top: max(-155px, -17svh);
   padding-top: 24px;
   padding-bottom: 64px;
 }
