@@ -1,497 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuan-Ying | Software Developer</title>
-    <meta name="description"
-        content="Portfolio of Kuan-Ying, a software developer specializing in Computer Vision, Deep Learning, Python, and C++.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="mystyle.css">
-    <script src="https://kit.fontawesome.com/9fae2a7771.js" crossorigin="anonymous"></script>
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuan-Ying Huang (Kerwin) — AI/ML &amp; 3D Computer Vision</title>
+  <meta name="description" content="Kuan-Ying Huang (Kerwin) — Software Engineer at Google specializing in AI/ML, 3D Computer Vision, and production software." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23121214'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='%23F6F4EE' font-family='system-ui,sans-serif' font-weight='800' font-size='18'%3EK%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/tokens.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
-
 <body>
+  <!-- ONE UNIFIED DNA WORLD: Single continuous SVG spanning Hero + Career × Foundations -->
+  <div id="dna-world" class="dna-world">
+    <svg id="unified-dna-svg" class="unified-dna-svg" aria-label="Continuous 3D DNA double helix flowing seamlessly into Career and Foundations"></svg>
 
-    <!-- START NAV -->
+    <div id="hero-runway" class="hero-runway">
+      <header id="top" class="exhibition-hero">
+        <div class="top-bar">
+          <a href="#top" class="brand-group" aria-label="Back to top">
+            <span class="porthole-mini">
+              <img data-portrait src="./images/head_shot.png" alt="Kuan-Ying Huang (Kerwin)" />
+            </span>
+            <span id="brand-name" class="brand">KERWIN</span>
+          </a>
 
-    <nav id="navbar" class="nav">
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
-            <i class="fas fa-bars"></i>
-        </button>
-        <ul class="nav-list" id="nav-list">
-            <li>
-                <a href="#welcome">About</a>
-            </li>
-            <li>
-                <a href="#experience">Experience</a>
-            </li>
-            <li>
-                <a href="#projects">Projects</a>
-            </li>
-            <li>
-                <a href="#certifications">Certifications</a>
-            </li>
-            <li>
-                <a href="#contact">Contact</a>
-            </li>
-        </ul>
-    </nav>
-
-    <!-- END NAV -->
-
-    <!-- START WELCOME SECTION -->
-
-    <section id="welcome" class="welcome-section">
-        <h1>Hey I'm Kuan-Ying (Kerwin)</h1>
-
-        <p>a software developer</p>
-
-        <div class="avatar-container">
-            <div class="speech-bubble" id="speech-bubble">Hi there! Hover me for some fun.</div>
-            <img class="head-image" id="head_shot" src="images/head_shot.png" alt="Kuan-Ying Profile Shot">
+          <nav class="top-nav" aria-label="Primary">
+            <a class="nav-secondary" href="#helix">Journey</a>
+            <a href="#projects">Works</a>
+            <a class="nav-secondary" href="#certifications">Credentials</a>
+            <a href="#contact">Contact</a>
+          </nav>
         </div>
 
-        <p class="bio-text">
-            By day, I wrangle <span class="highlight-day">AI/ML</span> for a living, turning black boxes into real-world
-            applications.
-            <br><br>
-            By night, I train for <span class="highlight-night">triathlons</span> until I completely forget what a
-            terminal looks like.
-        </p>
+        <svg class="orbital-backdrop" viewBox="0 0 1000 1000" aria-hidden="true">
+          <circle cx="500" cy="500" r="240" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 7"/>
+          <circle cx="500" cy="500" r="375" fill="none" stroke="currentColor" stroke-width="1"/>
+          <circle cx="500" cy="500" r="480" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <line x1="500" y1="60" x2="500" y2="90" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="500" y1="910" x2="500" y2="940" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="60" y1="500" x2="90" y2="500" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="910" y1="500" x2="940" y2="500" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
 
-        <div class="welcome-ctas">
-            <a href="#projects" class="btn btn-primary">View Projects</a>
-            <a href="#contact" class="btn btn-secondary">Get in Touch</a>
+        <div id="hero-intro" class="hero-intro">
+          <div class="telemetry-pill"><span class="telemetry-dot"></span><span id="hero-telemetry">TAIPEI · 25.03°N · SOFTWARE ENGINEER AT GOOGLE</span></div>
+          <h1 id="hero-name">Kuan-Ying Huang</h1>
+          <div id="hero-role" class="hero-role"></div>
+          <p id="hero-bio" class="hero-bio"></p>
         </div>
 
-    </section>
-
-    <!-- END WELCOME SECTION-->
-
-    <!-- START EXPERIENCE SECTION-->
-
-    <section id="experience" class="experience-section reveal">
-        <h2 class="experience-section-header">Experience</h2>
-
-        <!-- START TIMELINE -->
-        <div class="timeline">
-
-            <div class="timeline-item">
-                <div class="timeline-img"><img src="images/logo_Google.png"></div>
-                <div class="timeline-wrap">
-                    <div class="date">May. 2021 - Present</div>
-                    <h3 class="title">Software Engineer</h3>
-                    <div class="timeline-content">
-                        <p> Google<br>New Taipei City, Taiwan</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-img"><img src="images/logo_LIPS.png"></div>
-                <div class="timeline-wrap">
-                    <div class="date">Dec. 2017 - Feb. 2021</div>
-                    <h3 class="title">Algorithm Engineer</h3>
-                    <div class="timeline-content">
-                        <p> LIPS Corp.<br>Taipei, Taiwan</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-img"><img src="images/logo_NCU.png"></div>
-                <div class="timeline-wrap">
-                    <div class="date">Sep. 2015 - Jun. 2017</div>
-                    <h3 class="title">M.S. in Electrical Engineering</h3>
-                    <div class="timeline-content">
-                        <p> National Central University<br>Taoyuan, Taiwan</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-img"><img src="images/logo_SAA.jpg"></div>
-                <div class="timeline-wrap">
-                    <div class="date">Sep. 2015 - Jun. 2016</div>
-                    <h3 class="title">Industry-University Cooperative Program</h3>
-                    <div class="timeline-content">
-                        <p> Symtek Automation Asia<br>Taoyuan, Taiwan</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-img"><img src="images/logo_NUK.png"></div>
-                <div class="timeline-wrap">
-                    <div class="date">Sep. 2011 - Jun. 2015</div>
-                    <h3 class="title">B.S. in Electrical Engineering</h3>
-                    <div class="timeline-content">
-                        <p> National University of Kaohsiung<br>Kaohsiung, Taiwan</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        <!-- END TIMELINE -->
-
-    </section>
-
-    <!-- END EXPERIENCE SECTION-->
-
-    <!-- START PROJECTS SECTION-->
-
-    <section id="projects" class="projects-section reveal">
-        <h2 class="projects-section-header">Projects</h2>
-
-        <div class="projects-grid">
-            <!---------------- Personal Projects ------------------->
-            <a href="https://github.com/magikerwin/burn-drawing-generator" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/project_rust_drawing_generator.webp" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Interactive Drawing Generator using Rust-Burn and WebAssembly
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/burn-drawing-classifier" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/project_rust_drawing_classifier.webp" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Interactive Drawing Classifier using Rust-Burn and WebAssembly
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- LIPS Corp.------------------->
-            <a href="https://www.youtube.com/watch?v=C_zeHXi9gJM" target="_blank" class="project project-tile">
-                <iframe class="project-image" src="https://www.youtube.com/embed/C_zeHXi9gJM" alt="project"
-                    allowfullscreen></iframe>
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Hand Gesture Recognition using ToF Camera (Video Player)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.youtube.com/watch?v=CXBR0g1-gug" target="_blank" class="project project-tile">
-                <iframe class="project-image" src="https://www.youtube.com/embed/CXBR0g1-gug" alt="project"
-                    allowfullscreen></iframe>
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Hand Gesture Recognition using ToF Camera (Map Searching)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.youtube.com/watch?v=XWBRbA1G6Sw" target="_blank" class="project project-tile">
-                <iframe class="project-image" src="https://www.youtube.com/embed/XWBRbA1G6Sw" alt="project"
-                    allowfullscreen></iframe>
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Personal Protective Equipment (PPE) Detection
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.youtube.com/watch?v=4TDUnNWRbF0" target="_blank" class="project project-tile">
-                <img class="project-image" src="images/project_FD.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Face Detection for LIPSFace™ 3D AI Facial Recognition Terminal
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://youtu.be/vJ69LKp1iNY?t=60" target="_blank" class="project project-tile">
-                <img class="project-image" src="images/project_PD.jpg" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Pedestrian Detection for Surveillance Systems (RGB/ToF cameras)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- School ------------------->
-            <a href="https://drive.google.com/file/d/17X7rKNIqJrMb0sX8pnUVxCsLh52pLDJY/view?usp=sharing" target="_blank"
-                class="project project-tile">
-                <iframe class="project-image" src="https://www.youtube.com/embed/e8HC2H6Rw-8" alt="project"
-                    allowfullscreen></iframe>
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Deep Learning Based Stolen Vehicle Detection
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://drive.google.com/file/d/1rmmacJn-knPDKPIkiOFxk-T3vpRnbW4s/view?usp=sharing" target="_blank"
-                class="project project-tile">
-                <iframe class="project-image" src="https://www.youtube.com/embed/-rsi-i8vH48" alt="project"
-                    allowfullscreen></iframe>
-
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Copper Clad Laminates Detection for Industrial Robot Arm
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/Line-Following-Python" target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/project_lineThinning.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Line Thinning by Line Following in Python
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- Toy ------------------->
-            <a href="https://github.com/magikerwin/1st-PyCrawlerMarathon/tree/master/homework/Day-038_040"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/project_webScraperWordCloud.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Scraping a Wordcloud with Python
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/1st-Julia-DL-CV-Marathon/tree/master/homework/Day-034_036"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/project_monkey_classification_julia.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Monkey Classification with Julia and Flux
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/ML-From-Scratch-With-CPP" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/project_ml_from_scratch_cpp.jpg" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Machine Learning From Scratch with C++
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/RecSys-tf2" target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/RecSys-tf2.jpg" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Recommender System Algorithms in TensorFlow 2.0+ (on-going)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
+        <div id="stage-3d" class="stage-3d" tabindex="0" aria-label="Interactive 3D Ring that smoothly unwinds into a vertical DNA helix on scroll">
+          <div id="sculpture-origin" class="sculpture-origin"></div>
         </div>
 
-        <!--
-    <a href="https://github.com/magikerwin?tab=repositories" class="btn btn-link">
-        Show all <i class="fas fa-chevron-right"></i>
-    </a>
-    -->
-    </section>
-
-    <!-- END PROJECTS SECTION-->
-
-    <!-- START CERTIFICATIONS SECTION-->
-
-    <section id="certifications" class="certifications-section reveal">
-        <h2 class="certifications-section-header">Certifications</h2>
-
-        <div class="projects-grid">
-            <!---------------- Coursera ------------------->
-            <a href="https://www.credential.net/f67fb353-2cd8-46da-832b-68f8840ec3f2" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/logo_tf_dev.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    TensorFlow Developer Certificate
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- Coursera ------------------->
-            <a href="https://www.coursera.org/account/accomplishments/specialization/certificate/WR5DFV4A6RY4"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_coursera.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Deep Learning
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.coursera.org/account/accomplishments/certificate/QLK7L2AWAJZP" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/logo_coursera.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Machine Learning
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.coursera.org/account/accomplishments/specialization/certificate/BPSUYGJ7WCGB"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_coursera.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Advanced Machine Learning with TensorFlow on Google Cloud Platform
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.coursera.org/account/accomplishments/specialization/certificate/FD7GSV62PUPX"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_coursera.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Machine Learning with TensorFlow on Google Cloud Platform
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.coursera.org/account/accomplishments/specialization/certificate/WCJR2V4EZU6J"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_coursera.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    DeepLearning.AI TensorFlow Developer
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- Cupoy ------------------->
-            <a href="https://github.com/magikerwin/100Day-ML-Marathon/blob/master/Certificate.pdf" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/logo_cupoy.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Marathon Challenge - Machine Learning in Python
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/1st-PyCrawlerMarathon/blob/master/Certificate.pdf" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/logo_cupoy.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Marathon Challenge - Web Crawling in Python
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://github.com/magikerwin/1st-DL-CVMarathon/blob/master/Certificate.pdf" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/logo_cupoy.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Marathon Challenge - Deep Learning and Computer Vision in Julia
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- Qwiklabs ------------------->
-            <a href="https://www.qwiklabs.com/public_profiles/c0a529f5-aff7-473c-917c-dbbfd3a8c5ca" target="_blank"
-                class="project project-tile">
-                <img class="project-image" src="./images/Qwiklabs.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Cloud Service Hands-On Training
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <!---------------- FreeCodeCamp ------------------->
-            <a href="https://www.freecodecamp.org/certification/fcc5e80ebfc-c862-45d1-a576-f419a0f828b4/javascript-algorithms-and-data-structures"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_freecodecamp.jpg" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Algorithms and Data Structures (JavaScript)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://www.freecodecamp.org/certification/fcc5e80ebfc-c862-45d1-a576-f419a0f828b4/responsive-web-design"
-                target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_freecodecamp.jpg" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    Responsive Web Design (HTML&CSS)
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
-            <a href="https://certificate.algoexpert.io/AE-463b601e71" target="_blank" class="project project-tile">
-                <img class="project-image" src="./images/logo_algoexpert.png" alt="project" />
-                <p class="project-title">
-                    <span class="code">&lt;</span>
-                    AlgoExpert Certificate
-                    <span class="code">&#47;&gt;</span>
-                </p>
-            </a>
+        <div id="hero-bottom" class="hero-bottom">
+          <div class="ring-caption" aria-live="polite">
+            <span id="ring-tag" class="ring-tag"></span>
+            <span id="ring-title" class="ring-title"></span>
+            <a id="ring-link" class="ring-link" href="#" target="_blank" rel="noreferrer">Open ↗</a>
+          </div>
         </div>
-
-        <!--
-    <h4>Advanced Machine Learning with TensorFlow on Google Cloud Platform</h4>
-    <a href="https://www.coursera.org/account/accomplishments/specialization/BPSUYGJ7WCGB" class="btn btn-link">link</a>
-
-    <h4>Machine Learning with TensorFlow on Google Cloud Platform</h4>
-    <a href="https://www.coursera.org/account/accomplishments/specialization/FD7GSV62PUPX" class="btn btn-link">link</a>
-
-    <h4>Machine Learning</h4>
-    <a href="https://www.coursera.org/account/accomplishments/verify/QLK7L2AWAJZP" class="btn btn-link">link</a>
-    -->
-    </section>
-
-    <!-- END CERTIFICATIONS SECTION-->
-
-    <!-- START CONTACT SECTION -->
-
-    <section id="contact" class="contact-section reveal">
-        <div class="contact-section-header">
-            <h2>Let's work together...</h2>
-        </div>
-        <div class="contact-links">
-            <a href="https://www.linkedin.com/in/kuan-ying-huang-1993-magiclover/" class="btn contact-details">
-                <i class="fab fa-linkedin"></i> LinkedIn</a>
-            <a href="https://github.com/magikerwin" class="btn contact-details">
-                <i class="fab fa-github-square"></i> GitHub</a>
-            <a href="mailto:qwerzxcv98@gmail.com" class="btn contact-details">
-                <i class="fas fa-envelope"></i> Send a mail</a>
-        </div>
-    </section>
-
-    <!-- END CONTACT SECTION -->
-
-    <!-- START FLOATING TERMINAL -->
-    <div class="floating-terminal-wrapper" id="floating-terminal">
-        <button class="terminal-trigger-bubble" id="terminal-trigger" aria-label="Open Terminal CLI">
-            <i class="fas fa-terminal"></i>
-            <span class="bubble-tooltip">Try CLI console!</span>
-        </button>
-
-        <div class="terminal-container" id="terminal-popup">
-            <div class="terminal-header">
-                <div class="terminal-dots">
-                    <span class="terminal-dot red"></span>
-                    <span class="terminal-dot yellow"></span>
-                    <span class="terminal-dot green"></span>
-                </div>
-                <span class="terminal-title">kuanying@dev-terminal:~</span>
-                <button class="terminal-close-btn" id="terminal-close" aria-label="Close Terminal CLI">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="terminal-body" id="terminal-body">
-                <div class="terminal-line">Welcome to the interactive console!</div>
-                <div class="terminal-line">Type <span class="cmd-text">help</span> to view available commands.</div>
-                <div class="terminal-line input-line">
-                    <span class="prompt">kuanying$</span>
-                    <input type="text" id="terminal-input" autocomplete="off" placeholder="try 'help' or 'hack'">
-                </div>
-            </div>
-            <!-- Quick Buttons inside popup -->
-            <div class="terminal-quick-btns">
-                <button class="terminal-btn" data-cmd="help">help</button>
-                <button class="terminal-btn" data-cmd="skills">skills</button>
-                <button class="terminal-btn" data-cmd="joke">joke</button>
-                <button class="terminal-btn" data-cmd="coffee">coffee</button>
-                <button class="terminal-btn" data-cmd="hack">hack</button>
-                <button class="terminal-btn" data-cmd="clear">clear</button>
-            </div>
-        </div>
+      </header>
     </div>
-    <!-- END FLOATING TERMINAL -->
 
+    <div class="shell">
+      <!-- 01 · CONTINUOUS VERTICAL DNA JOURNEY (Rendered from SITE_DATA.journey) -->
+      <section id="helix" class="dna-stage">
+        <div id="helix-spine-anchor" class="helix-spine" aria-hidden="true"></div>
+
+        <div class="dna-head reveal">
+          <div class="dna-head-left">
+            <div class="sec-kicker">01 · Journey</div>
+            <h2>Career × Foundations</h2>
+          </div>
+          <div></div>
+          <div class="dna-head-right">
+            <div class="strand-legend">
+              <span class="legend-item"><span class="legend-dot" style="background:#14151a;"></span>Engineering</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#e8431f;"></span>Foundations</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="helix-rows" class="helix-rows"></div>
+      </section>
+    </div>
+  </div>
+
+  <main class="shell">
+    <!-- 02 · OPEN 4-COLUMN SWISS POSTER GALLERY -->
+    <section id="projects" class="sec-block">
+      <hr class="sec-rule" />
+      <div class="sec-head reveal">
+        <div>
+          <div class="sec-kicker">02 · Works</div>
+          <h2 id="projects-heading">All Projects</h2>
+        </div>
+        <div class="gallery-controls">
+          <div id="filter-tabs" class="filter-tabs" role="tablist"></div>
+          <input id="gallery-search" class="search-underline" type="text" placeholder="Filter works..." aria-label="Filter projects" />
+        </div>
+      </div>
+      <div id="poster-grid" class="poster-grid"></div>
+      <div class="gallery-more-wrap">
+        <button id="gallery-more" class="gallery-more" type="button" hidden></button>
+      </div>
+    </section>
+
+    <!-- 03 · COMPACT BENTO FINALE -->
+    <section id="certifications" class="sec-block">
+      <hr class="sec-rule" />
+      <div class="finale-grid reveal">
+        <div class="b-tile">
+          <div>
+            <div class="b-kicker"><span>03 · Credentials</span><span id="cert-count-badge"></span></div>
+            <div id="cert-tabs" class="cert-tabs" role="tablist"></div>
+            <div id="cert-mini-grid" class="cert-mini-grid"></div>
+          </div>
+        </div>
+
+        <div id="contact" class="b-tile vermilion">
+          <div>
+            <div class="b-kicker"><span>04 · Contact</span><span>Taipei</span></div>
+            <div class="cta-big">Let's build something crisp.</div>
+            <div id="contact-email-text" class="cta-email"></div>
+          </div>
+          <div class="cta-btns">
+            <button id="copy-email" class="cta-primary" type="button">Copy Email Address</button>
+            <div class="cta-row">
+              <a class="cta-sec" data-linkedin href="#" target="_blank" rel="noreferrer">LinkedIn ↗</a>
+              <a class="cta-sec" data-github href="#" target="_blank" rel="noreferrer">GitHub ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>© Kuan-Ying Huang (Kerwin)</span>
+      <span>Taipei, Taiwan</span>
+    </footer>
+  </main>
+
+  <div id="dna-tooltip" class="dna-tooltip" aria-hidden="true">
+    <span id="dna-tt-swatch" class="dna-tooltip-swatch"></span>
+    <span id="dna-tt-text"></span>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/main.js"></script>
 </body>
-
 </html>

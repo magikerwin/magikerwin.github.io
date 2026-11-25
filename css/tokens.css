@@ -1,0 +1,22 @@
+/**
+ * Design Tokens — Space-Age Industrial Studio (Braun / Apollo / Teenage Engineering)
+ * Lunar ceramic chassis, molded putty panels, International Signal Orange, and module obsidian.
+ */
+:root {
+  --bg: #f4f0e6;
+  --bg-warm: #e8e1d3;
+  --card: #fdfbf6;
+  --obsidian: #14151a;
+  --vermilion: #dc3b19;
+  --ink: #14151a;
+  --ink-soft: #4c4d57;
+  --muted: #7c7b82;
+  --hairline: rgba(20, 21, 26, 0.11);
+  --hairline-hi: rgba(20, 21, 26, 0.24);
+  --accent: #e8431f;
+  --cobalt: #1e4dd8;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas,
+    monospace;
+}
