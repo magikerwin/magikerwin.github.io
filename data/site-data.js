@@ -285,4 +285,105 @@ export const SITE_DATA = {
       ],
     },
   ],
+
+  /**
+   * 04 · Unlockable Triathlon Race Log (triggered by 3× Avatar tap or completing SWIM · BIKE · RUN chips).
+   * Adding a new race automatically updates total count, Distance Filter tabs, and Best (PB) times per distance.
+   *
+   * Minimal race template:
+   *   { event: "Race Name", distance: "113K", date: "2027/04/11", location: "Penghu", time: "06:30:00", url: "https://..." }
+   * Optional fields: `status: "upcoming"`, `splits: { swim, t1, bike, t2, run }`, `note`, `portalUrl`
+   */
+  triathlonLog: [
+    {
+      event: "2027 IRONMAN Penghu",
+      distance: "226K",
+      date: "2027/04/11",
+      location: "Penghu",
+      status: "upcoming",
+      note: "Registered",
+    },
+    {
+      event: "2026 IRONMAN 70.3 Kenting",
+      distance: "113K",
+      date: "2026/11/01",
+      location: "Kenting",
+      note: "M30-34 · Finisher",
+      url: "https://ai-triathlon-result.teraren.com/en/archive/im703_kenting/2026",
+      portalUrl: "https://www.ironman.com/races/im703-kenting/results",
+    },
+    {
+      event: "2026 Force Aquathlon",
+      distance: "Aquathlon",
+      date: "2026/06/28",
+      location: "NTPU Sanxia",
+      note: "750m Swim + 7km Run",
+      url: "https://fun3sport.com/match/",
+    },
+    {
+      event: "2026 New Taipei Breeze Triathlon",
+      distance: "51.5K",
+      date: "2026",
+      location: "New Taipei",
+      time: "03:29:08",
+      splits: { swim: "0:43:21", t1: "10:23", bike: "1:32:52", t2: "5:23", run: "0:57:07" },
+      note: "Olympic Distance",
+      url: "https://tstgroup.com.tw/?p=52400",
+    },
+    {
+      event: "2026 Taitung Puyuma Triathlon",
+      distance: "113K",
+      date: "2026/03/28",
+      location: "Taitung",
+      time: "06:49:38",
+      splits: { swim: "0:51:28", t1: "15:17", bike: "3:01:08", t2: "10:21", run: "2:31:22" },
+      note: "Challenge Division",
+      url: "https://www.racelog.tw/result.php?id=81548",
+      portalUrl: "https://www.global100triathlon.com/",
+    },
+    {
+      event: "2025 IRONMAN 70.3 Kenting",
+      distance: "113K",
+      date: "2025/11/02",
+      location: "Kenting",
+      time: "07:46:28",
+      splits: { swim: "0:51:33" },
+      note: "M30-34",
+      url: "https://ai-triathlon-result.teraren.com/archive/im703_kenting/2025/im703_kenting_2025/athletes/180",
+      portalUrl: "https://www.ironman.com/races/im703-kenting/results",
+    },
+    {
+      event: "2025 Taitung Puyuma Triathlon",
+      distance: "226K",
+      date: "2025/03/29",
+      location: "Taitung",
+      time: "16:27:39",
+      splits: { swim: "1:44:45", t1: "11:17", bike: "7:54:16", t2: "3:49", run: "6:33:30" },
+      note: "Overall 238/324 · AG 18/22",
+      url: "https://racelog.tw/athlete.php?name=%E9%BB%83%E5%86%A0%E7%A9%8E&from_event=87",
+      portalUrl: "https://www.global100triathlon.com/",
+    },
+    {
+      event: "2024 LAVA TRI Dapeng Bay",
+      distance: "Other",
+      date: "2024/12/01",
+      location: "Dapeng Bay",
+      url: "https://bravelog.tw/contest/rank/2024120102",
+    },
+    {
+      event: "2024 Taitung Puyuma Triathlon",
+      distance: "Other",
+      date: "2024/03/23",
+      location: "Taitung",
+      url: "https://racelog.tw/athlete.php?name=%E9%BB%83%E5%86%A0%E7%A9%8E&from_event=87",
+      portalUrl: "https://www.global100triathlon.com/",
+    },
+    {
+      event: "First Olympic-Distance Triathlon",
+      distance: "51.5K",
+      date: "2023",
+      time: "~03:30:00",
+      note: "51.5K → 113K → 226K progression",
+    },
+  ],
 };
