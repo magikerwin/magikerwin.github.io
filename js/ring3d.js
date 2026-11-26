@@ -1,5 +1,96 @@
 import { isLightTheme, renderTileArt, resolveTileStyle } from "./tile-art.js";
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function makeSvg(tag, attrs = {}) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function smoothBezierSlice(arr, from, to, tailGuide, headGuide) {
+  if (to <= from || arr.length < 2) return "";
+  const last = Math.min(to, arr.length - 1);
+  let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
+  for (let k = from; k < last; k++) {
+    const p0 = k > 0 ? arr[k - 1] : (headGuide || arr[0]);
+    const p1 = arr[k];
+    const p2 = arr[k + 1];
+    const p3 = k + 2 < arr.length ? arr[k + 2] : (tailGuide || p2);
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+/**
+ * Builds persistent reusable SVG nodes once at init (0 DOM node allocations or innerHTML parses per frame).
+ */
+function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
+  if (!unifiedSvg) return null;
+  unifiedSvg.textContent = "";
+
+  const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
+  const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
+  const spineRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.22", "stroke-width": "1.2" });
+  const funnelPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.1", "stroke-linecap": "round" });
+  const funnelPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.1", "stroke-linecap": "round" });
+  const spinePathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-opacity": "0.84", "stroke-width": "2", "stroke-linecap": "round" });
+  const spinePathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.88", "stroke-width": "2", "stroke-linecap": "round" });
+  const heroPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.4", "stroke-linecap": "round" });
+  const heroPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.4", "stroke-linecap": "round" });
+
+  const heroMidGroup = makeSvg("g");
+  const heroMidDots = Array.from({ length: pairCount }, () => {
+    const c = makeSvg("circle", { r: "3", fill: "#E8431F" });
+    heroMidGroup.appendChild(c);
+    return c;
+  });
+
+  const pulsesGroup = makeSvg("g", { display: "none" });
+  const pulseOuterA = makeSvg("circle", { r: "4.2", fill: "#14151A" });
+  const pulseInnerA = makeSvg("circle", { r: "2.2", fill: "#14151A" });
+  const pulseOuterB = makeSvg("circle", { r: "4.2", fill: "#E8431F" });
+  const pulseInnerB = makeSvg("circle", { r: "2.2", fill: "#E8431F" });
+  pulsesGroup.append(pulseOuterA, pulseInnerA, pulseOuterB, pulseInnerB);
+
+  const beadsGroup = makeSvg("g", { display: "none" });
+  const mobileBeads = tileStyles.map((st, i) => {
+    const isLight = tileIsLight[i];
+    const c = makeSvg("circle", {
+      class: "dna-bead",
+      "data-proj": String(i),
+      r: "4.2",
+      fill: st.bg,
+      stroke: isLight ? "rgba(20,21,26,0.45)" : "#F4F0E6",
+      "stroke-width": isLight ? "1.4" : "1.9",
+    });
+    beadsGroup.appendChild(c);
+    return c;
+  });
+
+  const originDot = makeSvg("circle", { fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
+  const termDot = makeSvg("circle", { r: "4.4", fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
+
+  unifiedSvg.append(
+    heroRungsPath, funnelRungsPath, spineRungsPath,
+    funnelPathB, funnelPathA, spinePathB, spinePathA,
+    heroPathB, heroPathA, heroMidGroup, pulsesGroup, beadsGroup,
+    originDot, termDot
+  );
+
+  return {
+    heroRungsPath, funnelRungsPath, spineRungsPath,
+    funnelPathB, funnelPathA, spinePathB, spinePathA,
+    heroPathB, heroPathA, heroMidGroup, heroMidDots,
+    pulsesGroup, pulseOuterA, pulseInnerA, pulseOuterB, pulseInnerB,
+    beadsGroup, mobileBeads, originDot, termDot,
+  };
+}
+
 /**
  * UNIFIED VERTICAL FLOW ENGINE:
  *   ◎ 3D Exhibition Ring  --(smooth scroll)-->  🧬 VERTICAL 3D DNA Double Helix
@@ -57,102 +148,7 @@ export function initRing3D(tiles) {
     .join("");
 
   const tileEls = Array.from(origin.querySelectorAll(".ring-tile"));
-
-  const SVG_NS = "http://www.w3.org/2000/svg";
-  function makeSvg(tag, attrs = {}) {
-    const el = document.createElementNS(SVG_NS, tag);
-    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-    return el;
-  }
-
-  // Persistent reusable SVG scene graph (0 DOM node allocations or innerHTML parses per frame)
-  let svgScene = null;
-  if (unifiedSvg) {
-    unifiedSvg.textContent = "";
-    const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
-    const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
-    const spineRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.22", "stroke-width": "1.2" });
-    const funnelPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.1", "stroke-linecap": "round" });
-    const funnelPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.1", "stroke-linecap": "round" });
-    const spinePathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-opacity": "0.84", "stroke-width": "2", "stroke-linecap": "round" });
-    const spinePathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.88", "stroke-width": "2", "stroke-linecap": "round" });
-    const heroPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.4", "stroke-linecap": "round" });
-    const heroPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.4", "stroke-linecap": "round" });
-
-    const heroMidGroup = makeSvg("g");
-    const heroMidDots = [];
-    for (let p = 0; p < PAIRS; p++) {
-      const c = makeSvg("circle", { r: "3", fill: "#E8431F" });
-      heroMidGroup.appendChild(c);
-      heroMidDots.push(c);
-    }
-
-    const pulsesGroup = makeSvg("g", { display: "none" });
-    const pulseOuterA = makeSvg("circle", { r: "4.2", fill: "#14151A" });
-    const pulseInnerA = makeSvg("circle", { r: "2.2", fill: "#14151A" });
-    const pulseOuterB = makeSvg("circle", { r: "4.2", fill: "#E8431F" });
-    const pulseInnerB = makeSvg("circle", { r: "2.2", fill: "#E8431F" });
-    pulsesGroup.append(pulseOuterA, pulseInnerA, pulseOuterB, pulseInnerB);
-
-    const beadsGroup = makeSvg("g", { display: "none" });
-    const mobileBeads = [];
-    for (let i = 0; i < N; i++) {
-      const isLight = tileIsLight[i];
-      const c = makeSvg("circle", {
-        class: "dna-bead",
-        "data-proj": String(i),
-        r: "4.2",
-        fill: tileStyles[i].bg,
-        stroke: isLight ? "rgba(20,21,26,0.45)" : "#F4F0E6",
-        "stroke-width": isLight ? "1.4" : "1.9",
-      });
-      beadsGroup.appendChild(c);
-      mobileBeads.push(c);
-    }
-
-    const originDot = makeSvg("circle", { fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
-    const termDot = makeSvg("circle", { r: "4.4", fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
-
-    unifiedSvg.append(
-      heroRungsPath,
-      funnelRungsPath,
-      spineRungsPath,
-      funnelPathB,
-      funnelPathA,
-      spinePathB,
-      spinePathA,
-      heroPathB,
-      heroPathA,
-      heroMidGroup,
-      pulsesGroup,
-      beadsGroup,
-      originDot,
-      termDot
-    );
-
-    svgScene = {
-      heroRungsPath,
-      funnelRungsPath,
-      spineRungsPath,
-      funnelPathB,
-      funnelPathA,
-      spinePathB,
-      spinePathA,
-      heroPathB,
-      heroPathA,
-      heroMidGroup,
-      heroMidDots,
-      pulsesGroup,
-      pulseOuterA,
-      pulseInnerA,
-      pulseOuterB,
-      pulseInnerB,
-      beadsGroup,
-      mobileBeads,
-      originDot,
-      termDot,
-    };
-  }
+  const svgScene = createSvgScene(unifiedSvg, PAIRS, tileStyles, tileIsLight);
 
   let radius = 330;
   let persp = 1150;
@@ -166,7 +162,6 @@ export function initRing3D(tiles) {
   let moved = false;
   let activeShown = -1;
   let morph = 0;
-  let activeEraSet = new Set();
   let pulseClock = 0;
   let autoPauseUntil = 0;
   let lastNow = performance.now();
@@ -288,24 +283,6 @@ export function initRing3D(tiles) {
     }
   }
 
-  function smoothBezierSlice(arr, from, to, tailGuide, headGuide) {
-    if (to <= from || arr.length < 2) return "";
-    const last = Math.min(to, arr.length - 1);
-    let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
-    for (let k = from; k < last; k++) {
-      const p0 = k > 0 ? arr[k - 1] : (headGuide || arr[0]);
-      const p1 = arr[k];
-      const p2 = arr[k + 1];
-      const p3 = k + 2 < arr.length ? arr[k + 2] : (tailGuide || p2);
-      const c1x = p1.x + (p2.x - p0.x) / 6;
-      const c1y = p1.y + (p2.y - p0.y) / 6;
-      const c2x = p2.x - (p3.x - p1.x) / 6;
-      const c2y = p2.y - (p3.y - p1.y) / 6;
-      d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-    }
-    return d;
-  }
-
   function buildHeroCurve(strand, isA, curAngle, dnaR, dnaDy, dnaYShift, e, stageCx, stageCy) {
     const sign = isA ? 1 : -1;
     const pts = [];
@@ -332,54 +309,47 @@ export function initRing3D(tiles) {
     return pts;
   }
 
-  // Hover/Click tooltips on the color-coded project beads on the unified DNA spine
-  if (unifiedSvg && ttEl) {
-    unifiedSvg.addEventListener("mousemove", (e) => {
-      const bead = e.target.closest(".dna-bead");
-      if (!bead) { ttEl.classList.remove("show"); return; }
-      const idx = Number(bead.dataset.proj);
+  // Unified tooltip handler for both DNA spine micro-glyphs (desktop) and beads (mobile)
+  if (ttEl) {
+    const hideTooltip = () => ttEl.classList.remove("show");
+    const showProjectTooltip = (idx, clientX, clientY) => {
       const p = tiles[idx];
       if (!p) return;
       ttSwatch.style.background = tileStyles[idx].bg;
       ttText.textContent = `${String(idx + 1).padStart(2, "0")} · ${p.label || p.title} — ${p.stack || p.category} ↗`;
-      ttEl.style.left = `${e.clientX}px`;
-      ttEl.style.top = `${e.clientY - 12}px`;
+      ttEl.style.left = `${clientX}px`;
+      ttEl.style.top = `${clientY - 12}px`;
       ttEl.classList.add("show");
-    });
-    unifiedSvg.addEventListener("mouseleave", () => ttEl.classList.remove("show"));
-    unifiedSvg.addEventListener("click", (e) => {
-      const bead = e.target.closest(".dna-bead");
-      if (!bead) return;
-      const p = tiles[Number(bead.dataset.proj)];
-      if (p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
-    });
-  }
+    };
 
-  if (dnaWrap && ttEl) {
-    dnaWrap.addEventListener("mousemove", (e) => {
-      const tok = e.target.closest(".spine-micro-tok");
-      if (!tok) {
-        if (!e.target.closest(".dna-bead")) ttEl.classList.remove("show");
-        return;
-      }
-      const idx = Number(tok.dataset.proj);
-      const p = tiles[idx];
-      if (!p) return;
-      ttSwatch.style.background = tileStyles[idx].bg;
-      ttText.textContent = `${String(idx + 1).padStart(2, "0")} · ${p.label || p.title} — ${p.stack || p.category} ↗`;
-      ttEl.style.left = `${e.clientX}px`;
-      ttEl.style.top = `${e.clientY - 12}px`;
-      ttEl.classList.add("show");
-    });
-    dnaWrap.addEventListener("mouseleave", () => ttEl.classList.remove("show"));
-    window.addEventListener("scroll", () => ttEl.classList.remove("show"), { passive: true });
-  }
+    if (unifiedSvg) {
+      unifiedSvg.addEventListener("mousemove", (e) => {
+        const bead = e.target.closest(".dna-bead");
+        if (!bead) { hideTooltip(); return; }
+        showProjectTooltip(Number(bead.dataset.proj), e.clientX, e.clientY);
+      });
+      unifiedSvg.addEventListener("mouseleave", hideTooltip);
+      unifiedSvg.addEventListener("click", (e) => {
+        const bead = e.target.closest(".dna-bead");
+        if (!bead) return;
+        const p = tiles[Number(bead.dataset.proj)];
+        if (p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
+      });
+    }
 
-  document.querySelectorAll(".helix-pair[data-era-indices]").forEach((row) => {
-    const idxs = row.dataset.eraIndices.split(",").filter(Boolean).map(Number).filter((i) => i >= 0 && i < N);
-    row.addEventListener("mouseenter", () => { activeEraSet = new Set(idxs); });
-    row.addEventListener("mouseleave", () => { activeEraSet = new Set(); });
-  });
+    if (dnaWrap) {
+      dnaWrap.addEventListener("mousemove", (e) => {
+        const tok = e.target.closest(".spine-micro-tok");
+        if (!tok) {
+          if (!e.target.closest(".dna-bead")) hideTooltip();
+          return;
+        }
+        showProjectTooltip(Number(tok.dataset.proj), e.clientX, e.clientY);
+      });
+      dnaWrap.addEventListener("mouseleave", hideTooltip);
+      window.addEventListener("scroll", hideTooltip, { passive: true });
+    }
+  }
 
   function tick(now = performance.now()) {
     const dt = Math.min(Math.max((now - lastNow) / 1000, 0.001), 0.05);

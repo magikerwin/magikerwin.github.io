@@ -99,7 +99,7 @@ export const SITE_DATA = {
           { label: "Side Lab", value: "Rust + Burn neural nets compiled to WebAssembly" },
           {
             label: "Endurance",
-            value: "Multi-distance triathlete",
+            value: "Triathlete",
             triLegs: ["swim", "bike", "run"],
           },
         ],
