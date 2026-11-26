@@ -33,6 +33,16 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   if (!unifiedSvg) return null;
   unifiedSvg.textContent = "";
 
+  const orbitGroup = makeSvg("g");
+  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.6", "stroke-linecap": "round" });
+  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.6", "stroke-linecap": "round" });
+  const tetherPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.5", "stroke-linecap": "round" });
+  const tetherPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.5", "stroke-linecap": "round" });
+  const orbitPulseA = makeSvg("circle", { r: "3.1", fill: "#14151A" });
+  const orbitPulseB = makeSvg("circle", { r: "3.1", fill: "#E8431F" });
+  const tetherPulse = makeSvg("circle", { r: "2.8", fill: "#E8431F" });
+  orbitGroup.append(tetherPathB, tetherPathA, orbitPathB, orbitPathA, orbitPulseA, orbitPulseB, tetherPulse);
+
   const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
   const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
   const spineRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.22", "stroke-width": "1.2" });
@@ -76,6 +86,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   const termDot = makeSvg("circle", { r: "4.4", fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
 
   unifiedSvg.append(
+    orbitGroup,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, pulsesGroup, beadsGroup,
@@ -83,6 +94,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   );
 
   return {
+    orbitGroup, orbitPathA, orbitPathB, tetherPathA, tetherPathB, orbitPulseA, orbitPulseB, tetherPulse,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, heroMidDots,
@@ -171,6 +183,7 @@ export function initRing3D(tiles) {
   let lastViewH = 0;
   let heroVisibleLast = true;
   let funnelVisibleLast = false;
+  let orbitVisibleLast = true;
 
   // Cached layout geometry — refreshed only on resize/ResizeObserver so tick() triggers 0 layout reflows
   const lay = {
@@ -307,6 +320,109 @@ export function initRing3D(tiles) {
     const last = strand[strand.length - 1];
     pts.push({ x: last.x, y: last.y });
     return pts;
+  }
+
+  /**
+   * Projects the tilted braided twin-strand orbital ring framing the 3D tiles at e=0
+   * and connects its front-bottom rim directly into the DNA origin node (spineCx, helixTopY).
+   */
+  function renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e) {
+    const orbitOp = Math.max(0, 1 - e * 2.25);
+    if (orbitOp <= 0.015) {
+      if (orbitVisibleLast) {
+        svgScene.orbitGroup.setAttribute("display", "none");
+        orbitVisibleLast = false;
+      }
+      return;
+    }
+    if (!orbitVisibleLast) {
+      svgScene.orbitGroup.removeAttribute("display");
+      orbitVisibleLast = true;
+    }
+
+    const shrink = lerp(1, 0.72, Math.min(e * 2, 1));
+    const baseR = Math.min(radius * (isPhone ? 1.2 : 1.24), hw * (isPhone ? 0.45 : 0.43)) * shrink;
+    const phase = angle * DEG * 1.4;
+    const SEG = 36;
+    const waveY = isPhone ? 6.5 : 9;
+
+    const projectOrbit = (th, sign) => {
+      const r = baseR * (1 + sign * 0.028 * Math.cos(3 * th + phase));
+      const x0 = r * Math.sin(th);
+      const z0 = r * Math.cos(th);
+      const y0 = sign * Math.sin(3 * th + phase) * waveY;
+      const x1 = x0 * cosZ - y0 * sinZ;
+      const y1 = x0 * sinZ + y0 * cosZ;
+      const y2 = y1 * cosX - z0 * sinX;
+      const z2 = y1 * sinX + z0 * cosX - radius * 0.5;
+      const pf = persp / Math.max(persp - z2, 120);
+      return { x: stageCx + x1 * pf, y: stageCy + y2 * pf };
+    };
+
+    const ptsA = [];
+    const ptsB = [];
+    for (let k = 0; k <= SEG; k++) {
+      const th = (k / SEG) * Math.PI * 2;
+      ptsA.push(projectOrbit(th, 1));
+      ptsB.push(projectOrbit(th, -1));
+    }
+
+    const opRing = (0.58 * orbitOp).toFixed(2);
+    const opRingB = (0.64 * orbitOp).toFixed(2);
+    svgScene.orbitPathA.setAttribute("d", `${smoothBezierSlice(ptsA, 0, SEG)} Z`);
+    svgScene.orbitPathA.setAttribute("stroke-opacity", opRing);
+    svgScene.orbitPathB.setAttribute("d", `${smoothBezierSlice(ptsB, 0, SEG)} Z`);
+    svgScene.orbitPathB.setAttribute("stroke-opacity", opRingB);
+
+    // Smooth hourglass tether from front-bottom rim of orbital ring straight into DNA origin dot
+    const leftRim = projectOrbit(-22 * DEG, 1);
+    const rightRim = projectOrbit(22 * DEG, -1);
+    const dy = Math.max(48, helixTopY - (leftRim.y + rightRim.y) * 0.5);
+
+    const c1Ax = leftRim.x + (spineCx - leftRim.x) * 0.14;
+    const c1Ay = leftRim.y + dy * 0.46;
+    const c2Ax = spineCx - (isPhone ? 8 : 16);
+    const c2Ay = helixTopY - dy * 0.34;
+
+    const c1Bx = rightRim.x + (spineCx - rightRim.x) * 0.14;
+    const c1By = rightRim.y + dy * 0.46;
+    const c2Bx = spineCx + (isPhone ? 8 : 16);
+    const c2By = helixTopY - dy * 0.34;
+
+    const tetherOpA = (0.48 * orbitOp).toFixed(2);
+    const tetherOpB = (0.56 * orbitOp).toFixed(2);
+    svgScene.tetherPathA.setAttribute("d", `M${leftRim.x.toFixed(1)},${leftRim.y.toFixed(1)} C${c1Ax.toFixed(1)},${c1Ay.toFixed(1)} ${c2Ax.toFixed(1)},${c2Ay.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`);
+    svgScene.tetherPathA.setAttribute("stroke-opacity", tetherOpA);
+    svgScene.tetherPathB.setAttribute("d", `M${rightRim.x.toFixed(1)},${rightRim.y.toFixed(1)} C${c1Bx.toFixed(1)},${c1By.toFixed(1)} ${c2Bx.toFixed(1)},${c2By.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`);
+    svgScene.tetherPathB.setAttribute("stroke-opacity", tetherOpB);
+
+    // Living orbital & downward tether pulses (hidden when reduced-motion is preferred)
+    if (!reducedMotion) {
+      const pA = projectOrbit(pulseClock * Math.PI * 2, 1);
+      const pB = projectOrbit(((pulseClock + 0.5) % 1) * Math.PI * 2, -1);
+      const pulseOp = (0.85 * orbitOp).toFixed(2);
+      svgScene.orbitPulseA.removeAttribute("display");
+      svgScene.orbitPulseB.removeAttribute("display");
+      svgScene.tetherPulse.removeAttribute("display");
+      svgScene.orbitPulseA.setAttribute("cx", pA.x.toFixed(1));
+      svgScene.orbitPulseA.setAttribute("cy", pA.y.toFixed(1));
+      svgScene.orbitPulseA.setAttribute("fill-opacity", pulseOp);
+      svgScene.orbitPulseB.setAttribute("cx", pB.x.toFixed(1));
+      svgScene.orbitPulseB.setAttribute("cy", pB.y.toFixed(1));
+      svgScene.orbitPulseB.setAttribute("fill-opacity", pulseOp);
+
+      const t = pulseClock;
+      const mt = 1 - t;
+      const tx = mt * mt * mt * rightRim.x + 3 * mt * mt * t * c1Bx + 3 * mt * t * t * c2Bx + t * t * t * spineCx;
+      const ty = mt * mt * mt * rightRim.y + 3 * mt * mt * t * c1By + 3 * mt * t * t * c2By + t * t * t * helixTopY;
+      svgScene.tetherPulse.setAttribute("cx", tx.toFixed(1));
+      svgScene.tetherPulse.setAttribute("cy", ty.toFixed(1));
+      svgScene.tetherPulse.setAttribute("fill-opacity", (0.88 * orbitOp).toFixed(2));
+    } else {
+      svgScene.orbitPulseA.setAttribute("display", "none");
+      svgScene.orbitPulseB.setAttribute("display", "none");
+      svgScene.tetherPulse.setAttribute("display", "none");
+    }
   }
 
   // Unified tooltip handler for both DNA spine micro-glyphs (desktop) and beads (mobile)
@@ -495,9 +611,11 @@ export function initRing3D(tiles) {
 
     // ONE SINGLE CONTINUOUS SVG (Persistent DOM nodes — 0 innerHTML calls per frame)
     if (svgScene && strandA.length && strandB.length) {
+      renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e);
+
       const lowerAmp = isPhone ? 10 : (isMid ? 24 : 32);
-      const heroOp = e <= 0.28 ? 0 : Math.min((e - 0.28) / 0.52, 1);
-      const funnelOp = heroOp * Math.min(Math.max((e - 0.24) / 0.44, 0), 1);
+      const heroOp = e <= 0.16 ? 0 : Math.min((e - 0.16) / 0.46, 1);
+      const funnelOp = heroOp * Math.min(Math.max((e - 0.18) / 0.42, 0), 1);
 
       const lastA = strandA[strandA.length - 1];
       const lastB = strandB[strandB.length - 1];
