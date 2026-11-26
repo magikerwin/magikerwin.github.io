@@ -106,6 +106,76 @@ function renderFoundationCard(f, stats) {
   return "";
 }
 
+function initAvatarEasterEgg(quotes, showToast) {
+  if (!quotes.length) return;
+  const avatarBtn = document.getElementById("avatar-trigger");
+  const avatarBubble = document.getElementById("avatar-bubble");
+  const abTag = document.getElementById("ab-tag");
+  const abStep = document.getElementById("ab-step");
+  const abText = document.getElementById("ab-text");
+
+  if (avatarBtn && avatarBubble) {
+    let qIdx = -1;
+    let isOpen = false;
+    let pinned = false;
+    let closeTimer = null;
+
+    const openBubble = () => {
+      clearTimeout(closeTimer);
+      qIdx = (qIdx + 1) % quotes.length;
+      const q = quotes[qIdx];
+      const meta = TRI_META[q.leg] || TRI_META.transition;
+      const accent = q.color || meta.color;
+      avatarBtn.style.setProperty("--tri-accent", accent);
+      avatarBubble.style.setProperty("--tri-accent", accent);
+      abTag.innerHTML = `${meta.icon}<span>${q.tag}</span>`;
+      abStep.textContent = `${qIdx + 1}/${quotes.length} · TAP`;
+      abText.textContent = q.text;
+      avatarBubble.hidden = false;
+      requestAnimationFrame(() => avatarBubble.classList.add("show"));
+      avatarBtn.classList.add("is-active");
+      avatarBtn.setAttribute("aria-expanded", "true");
+      isOpen = true;
+    };
+
+    const closeBubble = () => {
+      clearTimeout(closeTimer);
+      if (!isOpen) return;
+      isOpen = false;
+      pinned = false;
+      avatarBubble.classList.remove("show");
+      avatarBtn.classList.remove("is-active");
+      avatarBtn.setAttribute("aria-expanded", "false");
+      closeTimer = setTimeout(() => { if (!isOpen) avatarBubble.hidden = true; }, 180);
+    };
+
+    const scheduleClose = (delay) => {
+      if (!pinned) closeTimer = setTimeout(closeBubble, delay);
+    };
+
+    if (window.matchMedia("(hover: hover)").matches) {
+      avatarBtn.addEventListener("mouseenter", () => { if (!isOpen) openBubble(); });
+      avatarBtn.addEventListener("mouseleave", () => scheduleClose(220));
+      avatarBubble.addEventListener("mouseenter", () => clearTimeout(closeTimer));
+      avatarBubble.addEventListener("mouseleave", () => scheduleClose(180));
+    }
+
+    const cycle = (e) => { e.stopPropagation(); pinned = true; openBubble(); };
+    avatarBtn.addEventListener("click", cycle);
+    avatarBubble.addEventListener("click", cycle);
+    document.addEventListener("click", (e) => { if (isOpen && !e.target.closest(".brand-group")) closeBubble(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen) closeBubble(); });
+    window.addEventListener("scroll", () => { if (isOpen && window.scrollY > 40) closeBubble(); }, { passive: true });
+  }
+
+  document.querySelectorAll(".tri-leg[data-tri-leg]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const q = quotes.find((item) => item.leg === btn.dataset.triLeg);
+      if (q) showToast(`${q.tag} · ${q.text}`, 3400);
+    });
+  });
+}
+
 export function initUI(data) {
   const { profile, projects, journey, certifications } = data;
   let activeCat = "All";
@@ -171,7 +241,7 @@ export function initUI(data) {
           .join("");
 
         return `
-          <div class="helix-pair reveal" data-era-indices="${eraIndices.join(",")}">
+          <div class="helix-pair reveal">
             <article class="dna-card${c.variant ? ` ${c.variant}` : ""}">
               <div>
                 <div class="dna-kicker">
@@ -201,7 +271,7 @@ export function initUI(data) {
       .join("");
   }
 
-  // Copy Email Toast (only used for explicit copy action)
+  // Copy Email & Triathlon Toast
   const toastEl = document.getElementById("toast");
   function showToast(msg, ms = 2200) {
     toastEl.textContent = msg;
@@ -214,98 +284,7 @@ export function initUI(data) {
     showToast(`Copied ${profile.email}`);
   });
 
-  // Playful Triathlon Avatar Easter Egg (hover on desktop, tap to cycle, auto-dismiss on scroll/outside)
-  const avatarBtn = document.getElementById("avatar-trigger");
-  const avatarBubble = document.getElementById("avatar-bubble");
-  const abTag = document.getElementById("ab-tag");
-  const abStep = document.getElementById("ab-step");
-  const abText = document.getElementById("ab-text");
-  const quotes = profile.avatarQuotes || [];
-
-  if (avatarBtn && avatarBubble && quotes.length) {
-    let qIdx = -1;
-    let isOpen = false;
-    let pinned = false;
-    let closeTimer = null;
-    const canHover = window.matchMedia("(hover: hover)").matches;
-
-    const renderQuote = (idx) => {
-      const q = quotes[idx];
-      const meta = TRI_META[q.leg] || TRI_META.transition;
-      const accent = q.color || meta.color;
-      avatarBtn.style.setProperty("--tri-accent", accent);
-      avatarBubble.style.setProperty("--tri-accent", accent);
-      abTag.innerHTML = `${meta.icon}<span>${q.tag}</span>`;
-      abStep.textContent = `${idx + 1}/${quotes.length} · TAP`;
-      abText.textContent = q.text;
-    };
-
-    const openBubble = (advance = true) => {
-      clearTimeout(closeTimer);
-      if (advance || qIdx < 0) qIdx = (qIdx + 1) % quotes.length;
-      renderQuote(qIdx);
-      avatarBubble.hidden = false;
-      requestAnimationFrame(() => avatarBubble.classList.add("show"));
-      avatarBtn.classList.add("is-active");
-      avatarBtn.setAttribute("aria-expanded", "true");
-      isOpen = true;
-    };
-
-    const closeBubble = () => {
-      clearTimeout(closeTimer);
-      if (!isOpen) return;
-      isOpen = false;
-      pinned = false;
-      avatarBubble.classList.remove("show");
-      avatarBtn.classList.remove("is-active");
-      avatarBtn.setAttribute("aria-expanded", "false");
-      closeTimer = setTimeout(() => {
-        if (!isOpen) avatarBubble.hidden = true;
-      }, 180);
-    };
-
-    if (canHover) {
-      avatarBtn.addEventListener("mouseenter", () => {
-        if (!isOpen) openBubble(true);
-      });
-      avatarBtn.addEventListener("mouseleave", () => {
-        if (!pinned) closeTimer = setTimeout(closeBubble, 220);
-      });
-      avatarBubble.addEventListener("mouseenter", () => clearTimeout(closeTimer));
-      avatarBubble.addEventListener("mouseleave", () => {
-        if (!pinned) closeTimer = setTimeout(closeBubble, 180);
-      });
-    }
-
-    avatarBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      pinned = true;
-      openBubble(true);
-    });
-    avatarBubble.addEventListener("click", (e) => {
-      e.stopPropagation();
-      pinned = true;
-      openBubble(true);
-    });
-    document.addEventListener("click", (e) => {
-      if (isOpen && !e.target.closest(".brand-group")) closeBubble();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && isOpen) closeBubble();
-    });
-    window.addEventListener("scroll", () => {
-      if (isOpen && window.scrollY > 40) closeBubble();
-    }, { passive: true });
-  }
-
-  // Interactive Swim / Bike / Run chips in Highlights card
-  document.querySelectorAll(".tri-leg[data-tri-leg]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const leg = btn.dataset.triLeg;
-      const q = quotes.find((item) => item.leg === leg);
-      if (q) showToast(`${q.tag} · ${q.text}`, 3400);
-    });
-  });
+  initAvatarEasterEgg(profile.avatarQuotes || [], showToast);
 
   // 02 · Open 4-Column Swiss Poster Gallery (auto-derived categories)
   const numbered = projects.map((p, i) => ({ ...p, code: String(i + 1).padStart(2, "0") }));

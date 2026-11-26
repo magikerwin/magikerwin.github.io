@@ -37,8 +37,7 @@ body {
   transform-box: fill-box;
   transform-origin: center;
 }
-.unified-dna-svg .dna-bead:hover,
-.unified-dna-svg .dna-bead.pulse {
+.unified-dna-svg .dna-bead:hover {
   transform: scale(1.42);
   filter: drop-shadow(0 2px 6px rgba(18, 18, 20, 0.35));
 }
@@ -622,11 +621,6 @@ h2 {
   72% { opacity: 1; transform: translate3d(var(--ox, 0px), 0, 0) scale(1); }
   100% { opacity: 0.94; transform: translate3d(var(--ox, 0px), 8px, 0) scale(0.97); }
 }
-@keyframes tok-dock-in-mob {
-  0% { opacity: 0.35; transform: translate3d(0, -10px, 0) scale(0.76); }
-  45% { opacity: 1; transform: translate3d(0, 0, 0) scale(1.08); }
-  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-}
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .spine-micro-tok {
@@ -637,7 +631,7 @@ h2 {
   }
 }
 .era-glyph-row {
-  display: inline-flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
@@ -737,15 +731,6 @@ h2 {
   border-top-color: rgba(255, 255, 255, 0.1);
   color: rgba(246, 244, 238, 0.55);
 }
-.era-swatches { display: inline-flex; align-items: center; gap: 4px; }
-.era-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  border: 1px solid rgba(18, 18, 20, 0.18);
-  display: inline-block;
-}
-.dna-card.obsidian .era-dot { border-color: rgba(255, 255, 255, 0.35); }
 .dna-actions { display: inline-flex; align-items: center; gap: 6px; }
 .dna-chip {
   border: 1px solid var(--hairline-hi);
@@ -1108,15 +1093,8 @@ footer {
     padding: 2px 0;
     order: -1;
   }
-  .spine-tok-stack { flex-direction: row; flex-wrap: wrap; gap: 6px; }
-  .spine-micro-tok,
-  .spine-micro-tok.tok-l,
-  .spine-micro-tok.tok-r { width: 24px; height: 24px; --ox: 0px; }
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .spine-micro-tok { animation-name: tok-dock-in-mob; }
-    }
-  }
+  .spine-tok-stack { display: none; }
+  .era-glyph-row { display: inline-flex; }
   .dna-chip { padding: 7px 11px; }
   .f-tab { padding: 8px 13px; }
   .c-tab { padding: 7px 12px; }
