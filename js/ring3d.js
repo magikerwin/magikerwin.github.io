@@ -33,13 +33,12 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   if (!unifiedSvg) return null;
   unifiedSvg.textContent = "";
 
-  const orbitGroup = makeSvg("g");
-  const orbitHaloPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1", "stroke-dasharray": "3 6" });
-  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.8", "stroke-linecap": "round" });
-  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.8", "stroke-linecap": "round" });
-  const orbitPulseA = makeSvg("circle", { r: "3.1", fill: "#14151A" });
-  const orbitPulseB = makeSvg("circle", { r: "3.1", fill: "#E8431F" });
-  orbitGroup.append(orbitHaloPath, orbitPathB, orbitPathA, orbitPulseA, orbitPulseB);
+  const axisGroup = makeSvg("g");
+  const axisPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2", "stroke-dasharray": "2 5", "stroke-linecap": "round" });
+  const axisCap = makeSvg("circle", { r: "2.2", fill: "#14151A" });
+  const axisPulseHalo = makeSvg("circle", { r: "5.5", fill: "#E8431F" });
+  const axisPulseDot = makeSvg("circle", { r: "2.5", fill: "#E8431F" });
+  axisGroup.append(axisPath, axisCap, axisPulseHalo, axisPulseDot);
 
   const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
   const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
@@ -84,7 +83,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   const termDot = makeSvg("circle", { r: "4.4", fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
 
   unifiedSvg.append(
-    orbitGroup,
+    axisGroup,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, pulsesGroup, beadsGroup,
@@ -92,7 +91,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   );
 
   return {
-    orbitGroup, orbitHaloPath, orbitPathA, orbitPathB, orbitPulseA, orbitPulseB,
+    axisGroup, axisPath, axisCap, axisPulseHalo, axisPulseDot,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, heroMidDots,
@@ -197,6 +196,7 @@ export function initRing3D(tiles) {
     stageOffX: window.innerWidth / 2,
     stageOffY: window.innerHeight / 2,
     stageH: 340,
+    plaqueBotOffY: window.innerHeight - 30,
     spineCx: window.innerWidth / 2,
     helixTopY: window.innerHeight,
     helixBotY: 1780,
@@ -210,6 +210,7 @@ export function initRing3D(tiles) {
     const worldRect = dnaWorld.getBoundingClientRect();
     const heroRect = heroEl.getBoundingClientRect();
     const stageRect = stage.getBoundingClientRect();
+    const bottomRect = heroBottom ? heroBottom.getBoundingClientRect() : null;
     const helixRect = dnaWrap.getBoundingClientRect();
     const anchorRect = spineAnchor.getBoundingClientRect();
     const tileW = origin.getBoundingClientRect().width || (window.innerWidth <= 680 ? 106 : 146);
@@ -238,6 +239,7 @@ export function initRing3D(tiles) {
     lay.stageOffX = stageRect.left - heroRect.left + stageRect.width / 2;
     lay.stageOffY = stageRect.top - heroRect.top + stageRect.height / 2;
     lay.stageH = stageRect.height || 300;
+    lay.plaqueBotOffY = bottomRect ? (bottomRect.bottom - heroRect.top) : (hh - 30);
     lay.spineCx = anchorRect.width > 0 ? (anchorRect.left - worldRect.left + anchorRect.width / 2) : ww / 2;
     lay.helixTopY = helixRect.top - worldRect.top;
     lay.helixBotY = helixRect.bottom - worldRect.top - 16;
@@ -321,126 +323,66 @@ export function initRing3D(tiles) {
   }
 
   /**
-   * Projects a geometrically pure tilted 3D orbital halo plus two symmetric, non-overlapping
-   * C1-tangent ribbons (Obsidian left flank, Signal Orange right flank) flowing smoothly into
-   * the DNA origin node (spineCx, helixTopY) with zero kinks, wobble, or stub ends.
+   * Renders a minimal Space-Age centered vertical telemetry plumb line & descending pulse
+   * strictly below the floating caption plaque down to the DNA origin node (0 side wires).
    */
-  function renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e) {
-    const orbitOp = Math.max(0, 1 - e * 2.25);
-    if (orbitOp <= 0.015) {
+  function renderVerticalAxis(stageCx, heroTopWorld, spineCx, helixTopY, e) {
+    const axisOp = Math.max(0, 1 - e * 2.8);
+    const y0 = heroTopWorld + lay.plaqueBotOffY + 12;
+    const y1 = helixTopY - 8;
+    const dy = y1 - y0;
+
+    if (axisOp <= 0.015 || dy < 16) {
       if (orbitVisibleLast) {
-        svgScene.orbitGroup.setAttribute("display", "none");
+        svgScene.axisGroup.setAttribute("display", "none");
         orbitVisibleLast = false;
       }
       return;
     }
     if (!orbitVisibleLast) {
-      svgScene.orbitGroup.removeAttribute("display");
+      svgScene.axisGroup.removeAttribute("display");
       orbitVisibleLast = true;
     }
 
-    const shrink = lerp(1, 0.72, Math.min(e * 2, 1));
-    const baseR = Math.min(radius * (isPhone ? 1.15 : 1.24), hw * (isPhone ? 0.44 : 0.42)) * shrink;
+    const centered = Math.abs(stageCx - spineCx) < 4;
+    let px = stageCx;
+    let py = y0;
 
-    const projectOrbit = (th) => {
-      const x0 = baseR * Math.sin(th);
-      const z0 = baseR * Math.cos(th);
-      const x1 = x0 * cosZ;
-      const y1 = x0 * sinZ;
-      const y2 = y1 * cosX - z0 * sinX;
-      const z2 = y1 * sinX + z0 * cosX - radius * 0.5;
-      const pf = persp / Math.max(persp - z2, 120);
-      return { x: stageCx + x1 * pf, y: stageCy + y2 * pf };
-    };
-
-    // Subtle 360° dashed 3D orbital halo track
-    const HALO_SEG = 36;
-    const haloPts = [];
-    for (let k = 0; k <= HALO_SEG; k++) {
-      haloPts.push(projectOrbit((k / HALO_SEG) * Math.PI * 2));
+    if (centered) {
+      svgScene.axisPath.setAttribute("d", `M${stageCx.toFixed(1)},${y0.toFixed(1)} L${stageCx.toFixed(1)},${y1.toFixed(1)}`);
+      py = lerp(y0, y1, pulseClock);
+    } else {
+      // On phones (left-rail DNA), glide gently below the plaque into the left-rail origin dot
+      const c1y = y0 + dy * 0.45;
+      const c2y = y1 - dy * 0.45;
+      svgScene.axisPath.setAttribute(
+        "d",
+        `M${stageCx.toFixed(1)},${y0.toFixed(1)} C${stageCx.toFixed(1)},${c1y.toFixed(1)} ${spineCx.toFixed(1)},${c2y.toFixed(1)} ${spineCx.toFixed(1)},${y1.toFixed(1)}`
+      );
+      const t = pulseClock;
+      const mt = 1 - t;
+      px = mt * mt * mt * stageCx + 3 * mt * mt * t * stageCx + 3 * mt * t * t * spineCx + t * t * t * spineCx;
+      py = mt * mt * mt * y0 + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * y1;
     }
-    svgScene.orbitHaloPath.setAttribute("d", `${smoothBezierSlice(haloPts, 0, HALO_SEG)} Z`);
-    svgScene.orbitHaloPath.setAttribute("stroke-opacity", (0.2 * orbitOp).toFixed(2));
 
-    // Symmetric non-overlapping ribbons starting behind back-center (180°):
-    //   Obsidian (side=-1): sweeps 180° -> 286° (-74°, lower-left flank), exits via exact native SVG cubic Bezier
-    //   Orange   (side=+1): sweeps 180° ->  74° (+74°, lower-right flank), exits via exact native SVG cubic Bezier
-    const buildCradleRibbon = (side) => {
-      const ARC_SEG = 32;
-      const startDeg = 180;
-      const peelDeg = side < 0 ? 286 : 74;
-      const arcPts = [];
-      for (let k = 0; k <= ARC_SEG; k++) {
-        arcPts.push(projectOrbit(lerp(startDeg, peelDeg, k / ARC_SEG) * DEG));
-      }
-
-      const peelRad = peelDeg * DEG;
-      const dir = side < 0 ? 1 : -1;
-      const p0 = arcPts[ARC_SEG];
-      const stepRad = Math.abs(peelDeg - startDeg) / ARC_SEG * DEG;
-      const tailGuide = projectOrbit(peelRad + dir * stepRad);
-
-      const pPrev = projectOrbit(peelRad - dir * 0.008);
-      const pNext = projectOrbit(peelRad + dir * 0.008);
-      const vx = pNext.x - pPrev.x;
-      const vy = pNext.y - pPrev.y;
-      const vLen = Math.hypot(vx, vy) || 1;
-      const utx = vx / vLen;
-      const uty = vy / vLen;
-
-      const distToOrigin = Math.hypot(spineCx - p0.x, helixTopY - p0.y);
-      const dy = Math.max(60, helixTopY - p0.y);
-      const handleLen = Math.min(distToOrigin * 0.34, dy * 0.52);
-
-      const c1x = p0.x + utx * handleLen;
-      const c1y = p0.y + uty * handleLen;
-      const c2x = spineCx + side * (isPhone ? (side < 0 ? 6 : 22) : 14);
-      const c2y = helixTopY - dy * 0.36;
-
-      const d = `${smoothBezierSlice(arcPts, 0, ARC_SEG, tailGuide)} C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`;
-
-      const sampleAt = (t) => {
-        if (t <= 0.5) {
-          const u = t / 0.5;
-          return arcPts[Math.min(ARC_SEG, Math.round(u * ARC_SEG))];
-        }
-        const u = (t - 0.5) / 0.5;
-        const mu = 1 - u;
-        return {
-          x: mu * mu * mu * p0.x + 3 * mu * mu * u * c1x + 3 * mu * u * u * c2x + u * u * u * spineCx,
-          y: mu * mu * mu * p0.y + 3 * mu * mu * u * c1y + 3 * mu * u * u * c2y + u * u * u * helixTopY,
-        };
-      };
-
-      return { d, sampleAt };
-    };
-
-    const ribA = buildCradleRibbon(-1);
-    const ribB = buildCradleRibbon(1);
-
-    svgScene.orbitPathA.setAttribute("d", ribA.d);
-    svgScene.orbitPathA.setAttribute("stroke-opacity", (0.62 * orbitOp).toFixed(2));
-    svgScene.orbitPathB.setAttribute("d", ribB.d);
-    svgScene.orbitPathB.setAttribute("stroke-opacity", (0.72 * orbitOp).toFixed(2));
+    svgScene.axisPath.setAttribute("stroke-opacity", (0.26 * axisOp).toFixed(2));
+    svgScene.axisCap.setAttribute("cx", stageCx.toFixed(1));
+    svgScene.axisCap.setAttribute("cy", y0.toFixed(1));
+    svgScene.axisCap.setAttribute("fill-opacity", (0.34 * axisOp).toFixed(2));
 
     if (!reducedMotion) {
-      const tA = pulseClock;
-      const tB = (pulseClock + 0.5) % 1;
-      const fadeA = Math.min(tA / 0.1, (1 - tA) / 0.1, 1);
-      const fadeB = Math.min(tB / 0.1, (1 - tB) / 0.1, 1);
-      const pA = ribA.sampleAt(tA);
-      const pB = ribB.sampleAt(tB);
-      svgScene.orbitPulseA.removeAttribute("display");
-      svgScene.orbitPulseB.removeAttribute("display");
-      svgScene.orbitPulseA.setAttribute("cx", pA.x.toFixed(1));
-      svgScene.orbitPulseA.setAttribute("cy", pA.y.toFixed(1));
-      svgScene.orbitPulseA.setAttribute("fill-opacity", (0.88 * orbitOp * fadeA).toFixed(2));
-      svgScene.orbitPulseB.setAttribute("cx", pB.x.toFixed(1));
-      svgScene.orbitPulseB.setAttribute("cy", pB.y.toFixed(1));
-      svgScene.orbitPulseB.setAttribute("fill-opacity", (0.9 * orbitOp * fadeB).toFixed(2));
+      const edgeFade = Math.min(pulseClock / 0.12, (1 - pulseClock) / 0.12, 1);
+      svgScene.axisPulseHalo.removeAttribute("display");
+      svgScene.axisPulseDot.removeAttribute("display");
+      svgScene.axisPulseHalo.setAttribute("cx", px.toFixed(1));
+      svgScene.axisPulseHalo.setAttribute("cy", py.toFixed(1));
+      svgScene.axisPulseHalo.setAttribute("fill-opacity", (0.22 * axisOp * edgeFade).toFixed(2));
+      svgScene.axisPulseDot.setAttribute("cx", px.toFixed(1));
+      svgScene.axisPulseDot.setAttribute("cy", py.toFixed(1));
+      svgScene.axisPulseDot.setAttribute("fill-opacity", (0.9 * axisOp * edgeFade).toFixed(2));
     } else {
-      svgScene.orbitPulseA.setAttribute("display", "none");
-      svgScene.orbitPulseB.setAttribute("display", "none");
+      svgScene.axisPulseHalo.setAttribute("display", "none");
+      svgScene.axisPulseDot.setAttribute("display", "none");
     }
   }
 
@@ -630,11 +572,11 @@ export function initRing3D(tiles) {
 
     // ONE SINGLE CONTINUOUS SVG (Persistent DOM nodes — 0 innerHTML calls per frame)
     if (svgScene && strandA.length && strandB.length) {
-      renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e);
+      renderVerticalAxis(stageCx, heroTopWorld, spineCx, helixTopY, e);
 
       const lowerAmp = isPhone ? 10 : (isMid ? 24 : 32);
-      const heroOp = e <= 0.16 ? 0 : Math.min((e - 0.16) / 0.46, 1);
-      const funnelOp = heroOp * Math.min(Math.max((e - 0.18) / 0.42, 0), 1);
+      const heroOp = e <= 0.22 ? 0 : Math.min((e - 0.22) / 0.48, 1);
+      const funnelOp = heroOp * Math.min(Math.max((e - 0.20) / 0.44, 0), 1);
 
       const lastA = strandA[strandA.length - 1];
       const lastB = strandB[strandB.length - 1];
