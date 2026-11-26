@@ -58,6 +58,102 @@ export function initRing3D(tiles) {
 
   const tileEls = Array.from(origin.querySelectorAll(".ring-tile"));
 
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  function makeSvg(tag, attrs = {}) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  // Persistent reusable SVG scene graph (0 DOM node allocations or innerHTML parses per frame)
+  let svgScene = null;
+  if (unifiedSvg) {
+    unifiedSvg.textContent = "";
+    const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
+    const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
+    const spineRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.22", "stroke-width": "1.2" });
+    const funnelPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.1", "stroke-linecap": "round" });
+    const funnelPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.1", "stroke-linecap": "round" });
+    const spinePathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-opacity": "0.84", "stroke-width": "2", "stroke-linecap": "round" });
+    const spinePathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-opacity": "0.88", "stroke-width": "2", "stroke-linecap": "round" });
+    const heroPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "2.4", "stroke-linecap": "round" });
+    const heroPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2.4", "stroke-linecap": "round" });
+
+    const heroMidGroup = makeSvg("g");
+    const heroMidDots = [];
+    for (let p = 0; p < PAIRS; p++) {
+      const c = makeSvg("circle", { r: "3", fill: "#E8431F" });
+      heroMidGroup.appendChild(c);
+      heroMidDots.push(c);
+    }
+
+    const pulsesGroup = makeSvg("g", { display: "none" });
+    const pulseOuterA = makeSvg("circle", { r: "4.2", fill: "#14151A" });
+    const pulseInnerA = makeSvg("circle", { r: "2.2", fill: "#14151A" });
+    const pulseOuterB = makeSvg("circle", { r: "4.2", fill: "#E8431F" });
+    const pulseInnerB = makeSvg("circle", { r: "2.2", fill: "#E8431F" });
+    pulsesGroup.append(pulseOuterA, pulseInnerA, pulseOuterB, pulseInnerB);
+
+    const beadsGroup = makeSvg("g", { display: "none" });
+    const mobileBeads = [];
+    for (let i = 0; i < N; i++) {
+      const isLight = tileIsLight[i];
+      const c = makeSvg("circle", {
+        class: "dna-bead",
+        "data-proj": String(i),
+        r: "4.2",
+        fill: tileStyles[i].bg,
+        stroke: isLight ? "rgba(20,21,26,0.45)" : "#F4F0E6",
+        "stroke-width": isLight ? "1.4" : "1.9",
+      });
+      beadsGroup.appendChild(c);
+      mobileBeads.push(c);
+    }
+
+    const originDot = makeSvg("circle", { fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
+    const termDot = makeSvg("circle", { r: "4.4", fill: "#E8431F", stroke: "#F4F0E6", "stroke-width": "2" });
+
+    unifiedSvg.append(
+      heroRungsPath,
+      funnelRungsPath,
+      spineRungsPath,
+      funnelPathB,
+      funnelPathA,
+      spinePathB,
+      spinePathA,
+      heroPathB,
+      heroPathA,
+      heroMidGroup,
+      pulsesGroup,
+      beadsGroup,
+      originDot,
+      termDot
+    );
+
+    svgScene = {
+      heroRungsPath,
+      funnelRungsPath,
+      spineRungsPath,
+      funnelPathB,
+      funnelPathA,
+      spinePathB,
+      spinePathA,
+      heroPathB,
+      heroPathA,
+      heroMidGroup,
+      heroMidDots,
+      pulsesGroup,
+      pulseOuterA,
+      pulseInnerA,
+      pulseOuterB,
+      pulseInnerB,
+      beadsGroup,
+      mobileBeads,
+      originDot,
+      termDot,
+    };
+  }
+
   let radius = 330;
   let persp = 1150;
   let angle = -12;
@@ -73,15 +169,96 @@ export function initRing3D(tiles) {
   let activeEraSet = new Set();
   let pulseClock = 0;
   let autoPauseUntil = 0;
+  let lastNow = performance.now();
+  let lastActiveTileIdx = -1;
+  let lastHeroE = -1;
+  let lastViewW = 0;
+  let lastViewH = 0;
+  let heroVisibleLast = true;
+  let funnelVisibleLast = false;
+
+  // Cached layout geometry — refreshed only on resize/ResizeObserver so tick() triggers 0 layout reflows
+  const lay = {
+    worldTop: 0,
+    ww: window.innerWidth,
+    wh: 1800,
+    hw: window.innerWidth,
+    hh: window.innerHeight,
+    runwayH: window.innerHeight,
+    maxStickyY: 0,
+    maxScroll: 300,
+    heroOffX: 0,
+    stageOffX: window.innerWidth / 2,
+    stageOffY: window.innerHeight / 2,
+    stageH: 340,
+    spineCx: window.innerWidth / 2,
+    helixTopY: window.innerHeight,
+    helixBotY: 1780,
+    tileW: 146,
+    isPhone: window.innerWidth <= 680,
+    isMid: window.innerWidth <= 960,
+  };
 
   function measure() {
+    const sy = window.scrollY;
+    const worldRect = dnaWorld.getBoundingClientRect();
+    const heroRect = heroEl.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    const helixRect = dnaWrap.getBoundingClientRect();
+    const anchorRect = spineAnchor.getBoundingClientRect();
     const tileW = origin.getBoundingClientRect().width || (window.innerWidth <= 680 ? 106 : 146);
-    const gap = window.innerWidth <= 680 ? 8 : 14;
-    persp = window.innerWidth <= 680 ? 950 : 1150;
+
+    const isPhone = window.innerWidth <= 680;
+    const isMid = window.innerWidth <= 960;
+    const gap = isPhone ? 8 : 14;
+    persp = isPhone ? 950 : 1150;
     radius = Math.round((tileW + gap) / (2 * Math.sin(Math.PI / Math.max(N, 5))));
+
+    const ww = worldRect.width || window.innerWidth;
+    const wh = worldRect.height || 1800;
+    const hw = heroRect.width || window.innerWidth;
+    const hh = heroRect.height || window.innerHeight;
+    const runwayH = runway ? runway.offsetHeight : hh;
+
+    lay.worldTop = worldRect.top + sy;
+    lay.ww = ww;
+    lay.wh = wh;
+    lay.hw = hw;
+    lay.hh = hh;
+    lay.runwayH = runwayH;
+    lay.maxStickyY = Math.max(0, runwayH - hh);
+    lay.maxScroll = Math.max((runwayH - hh) * 0.78, 100);
+    lay.heroOffX = heroRect.left - worldRect.left;
+    lay.stageOffX = stageRect.left - heroRect.left + stageRect.width / 2;
+    lay.stageOffY = stageRect.top - heroRect.top + stageRect.height / 2;
+    lay.stageH = stageRect.height || 300;
+    lay.spineCx = anchorRect.width > 0 ? (anchorRect.left - worldRect.left + anchorRect.width / 2) : ww / 2;
+    lay.helixTopY = helixRect.top - worldRect.top;
+    lay.helixBotY = helixRect.bottom - worldRect.top - 16;
+    lay.tileW = tileW;
+    lay.isPhone = isPhone;
+    lay.isMid = isMid;
+
+    if (unifiedSvg) {
+      const vw = Math.round(ww);
+      const vh = Math.round(wh);
+      if (vw !== lastViewW || vh !== lastViewH) {
+        lastViewW = vw;
+        lastViewH = vh;
+        unifiedSvg.setAttribute("viewBox", `0 0 ${vw} ${vh}`);
+      }
+    }
   }
   measure();
-  window.addEventListener("resize", measure);
+  window.addEventListener("resize", measure, { passive: true });
+  window.visualViewport?.addEventListener("resize", measure, { passive: true });
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(measure);
+    ro.observe(dnaWorld);
+    if (heroEl) ro.observe(heroEl);
+    if (dnaWrap) ro.observe(dnaWrap);
+  }
+  document.fonts?.ready?.then(measure);
 
   function normDeg(deg) { return ((deg + 180) % 360 + 360) % 360 - 180; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -111,11 +288,48 @@ export function initRing3D(tiles) {
     }
   }
 
-  function getScrollProgress() {
-    if (reducedMotion || !runway) return 0;
-    const stickyH = heroEl ? heroEl.offsetHeight : window.innerHeight;
-    const maxScroll = Math.max((runway.offsetHeight - stickyH) * 0.78, 100);
-    return Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
+  function smoothBezierSlice(arr, from, to, tailGuide, headGuide) {
+    if (to <= from || arr.length < 2) return "";
+    const last = Math.min(to, arr.length - 1);
+    let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
+    for (let k = from; k < last; k++) {
+      const p0 = k > 0 ? arr[k - 1] : (headGuide || arr[0]);
+      const p1 = arr[k];
+      const p2 = arr[k + 1];
+      const p3 = k + 2 < arr.length ? arr[k + 2] : (tailGuide || p2);
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  function buildHeroCurve(strand, isA, curAngle, dnaR, dnaDy, dnaYShift, e, stageCx, stageCy) {
+    const sign = isA ? 1 : -1;
+    const pts = [];
+    const SUB = 4;
+    for (let p = 0; p < strand.length - 1; p++) {
+      const s0 = strand[p];
+      const s1 = strand[p + 1];
+      for (let k = 0; k < SUB; k++) {
+        const t = k / SUB;
+        const pairF = p + t;
+        const pPhi = (pairF * 46 + curAngle * 1.1) * DEG;
+        const xDna = sign * dnaR * Math.sin(pPhi);
+        const yDna = (pairF - (PAIRS - 1) / 2) * dnaDy + dnaYShift;
+        const zDna = sign * dnaR * Math.cos(pPhi) - 35;
+        const x = lerp(lerp(s0.rx, s1.rx, t), xDna, e);
+        const y = lerp(lerp(s0.ry, s1.ry, t), yDna, e);
+        const z = lerp(lerp(s0.rz, s1.rz, t), zDna, e);
+        const pf = persp / Math.max(persp - z, 120);
+        pts.push({ x: stageCx + x * pf, y: stageCy + y * pf });
+      }
+    }
+    const last = strand[strand.length - 1];
+    pts.push({ x: last.x, y: last.y });
+    return pts;
   }
 
   // Hover/Click tooltips on the color-coded project beads on the unified DNA spine
@@ -167,66 +381,63 @@ export function initRing3D(tiles) {
     row.addEventListener("mouseleave", () => { activeEraSet = new Set(); });
   });
 
-  function tick() {
-    const worldRect = dnaWorld.getBoundingClientRect();
+  function tick(now = performance.now()) {
+    const dt = Math.min(Math.max((now - lastNow) / 1000, 0.001), 0.05);
+    lastNow = now;
+
+    const sy = window.scrollY;
+    const worldBottom = lay.worldTop + lay.wh - sy;
     // Pause 3D + SVG work automatically when scrolled past #dna-world (saves mobile battery)
-    if (worldRect.bottom < -40) {
+    if (worldBottom < -40) {
       requestAnimationFrame(tick);
       return;
     }
 
-    const now = performance.now();
     if (!dragging) {
       if (targetAngle !== null) {
         const diff = targetAngle - angle;
         if (Math.abs(diff) < 0.08) { angle = targetAngle; targetAngle = null; }
-        else angle += diff * 0.14;
+        else angle += diff * (1 - Math.exp(-dt * 10));
       } else if (Math.abs(vel) > 0.06) {
-        angle += vel;
-        vel *= 0.94;
+        angle += vel * (dt * 60);
+        vel *= Math.pow(0.94, dt * 60);
       } else if (!stageHovered && !reducedMotion && now > autoPauseUntil) {
-        angle -= 0.1;
+        angle -= 6.0 * dt;
       }
     }
-    if (!reducedMotion) pulseClock = (pulseClock + 0.0038) % 1;
+    if (!reducedMotion) pulseClock = (pulseClock + 0.228 * dt) % 1;
 
-    const scrollP = getScrollProgress();
-    morph += (scrollP - morph) * 0.14;
-    if (Math.abs(scrollP - morph) < 0.0015) morph = scrollP;
+    const scrollP = reducedMotion || !runway ? 0 : Math.min(Math.max(sy / lay.maxScroll, 0), 1);
+    const morphAlpha = 1 - Math.exp(-dt * 22);
+    morph += (scrollP - morph) * morphAlpha;
+    if (Math.abs(scrollP - morph) < 0.0012) morph = scrollP;
     const e = easeInOut(morph);
 
-    if (heroIntro) {
-      const introOp = Math.max(1 - e * 2.0, 0);
-      heroIntro.style.opacity = introOp.toFixed(2);
-      heroIntro.style.transform = `translate3d(0, ${(-e * 30).toFixed(1)}px, 0)`;
-      heroIntro.style.pointerEvents = introOp < 0.15 ? "none" : "auto";
+    if (Math.abs(e - lastHeroE) > 0.0005) {
+      lastHeroE = e;
+      const fadeOp = Math.max(1 - e * 2.0, 0);
+      const fadeStr = fadeOp.toFixed(2);
+      const fadePe = fadeOp < 0.15 ? "none" : "auto";
+      if (heroIntro) {
+        heroIntro.style.opacity = fadeStr;
+        heroIntro.style.transform = `translate3d(0, ${(-e * 30).toFixed(1)}px, 0)`;
+        heroIntro.style.pointerEvents = fadePe;
+      }
+      if (heroBottom) {
+        heroBottom.style.opacity = fadeStr;
+        heroBottom.style.transform = `translate3d(0, ${(e * 20).toFixed(1)}px, 0)`;
+        heroBottom.style.pointerEvents = fadePe;
+      }
     }
 
-    if (heroBottom) {
-      const bottomOp = Math.max(1 - e * 2.0, 0);
-      heroBottom.style.opacity = bottomOp.toFixed(2);
-      heroBottom.style.transform = `translate3d(0, ${(e * 20).toFixed(1)}px, 0)`;
-      heroBottom.style.pointerEvents = bottomOp < 0.15 ? "none" : "auto";
-    }
+    const { hw, hh, tileW, isPhone, isMid, spineCx, helixTopY, helixBotY } = lay;
+    const heroTopWorld = Math.max(0, Math.min(sy - lay.worldTop, lay.maxStickyY));
+    const stageCx = lay.heroOffX + lay.stageOffX;
+    const stageCy = heroTopWorld + lay.stageOffY;
+    const heroBottomScreen = lay.worldTop + heroTopWorld + hh - sy;
+    const heroOnScreen = heroBottomScreen > -60;
 
-    const heroRect = heroEl.getBoundingClientRect();
-    const stageRect = stage.getBoundingClientRect();
-    const helixRect = dnaWrap.getBoundingClientRect();
-    const anchorRect = spineAnchor.getBoundingClientRect();
-
-    const ww = worldRect.width || window.innerWidth;
-    const wh = worldRect.height || 1800;
-    const hw = heroRect.width || window.innerWidth;
-    const hh = heroRect.height || window.innerHeight;
-
-    const stageCx = stageRect.left - worldRect.left + stageRect.width / 2;
-    const stageCy = stageRect.top - worldRect.top + stageRect.height / 2;
-    const heroTopWorld = heroRect.top - worldRect.top;
-
-    const tileW = origin.getBoundingClientRect().width || (window.innerWidth <= 680 ? 106 : 146);
-    const isPhone = window.innerWidth <= 680;
-    const isMid = window.innerWidth <= 960;
-    const compactDy = Math.max(26, Math.min((stageRect.height - 56) / (PAIRS - 1), isPhone ? 48 : 62));
+    const compactDy = Math.max(26, Math.min((lay.stageH - 56) / (PAIRS - 1), isPhone ? 48 : 62));
     const expandedPad = Math.min(210, hh * 0.28);
     const expandedDy = Math.max(32, Math.min((hh - expandedPad) / (PAIRS - 1), isPhone ? 68 : 76));
     const dnaDy = lerp(compactDy, expandedDy, e);
@@ -242,17 +453,34 @@ export function initRing3D(tiles) {
     const ringFrontIdx = Math.round(norm / STEP) % N;
     const ringActiveIdx = hoveredTile >= 0 ? hoveredTile : ringFrontIdx;
     const spotlightStrength = Math.max(0, 1 - e * 2.2);
+    const activeTargetIdx = spotlightStrength > 0.05 ? ringActiveIdx : -1;
+
+    if (activeTargetIdx !== lastActiveTileIdx) {
+      if (lastActiveTileIdx >= 0 && tileEls[lastActiveTileIdx]) {
+        tileEls[lastActiveTileIdx].classList.remove("is-active");
+      }
+      if (activeTargetIdx >= 0 && tileEls[activeTargetIdx]) {
+        tileEls[activeTargetIdx].classList.add("is-active");
+      }
+      lastActiveTileIdx = activeTargetIdx;
+    }
 
     const strandA = [];
     const strandB = [];
     let frontMostIdx = 0;
     let maxZ = -99999;
-    let bottomPhiRad = 0;
+    let bottomPhiRad = ((PAIRS - 1) * 46 + angle * 1.1) * DEG;
 
     for (let i = 0; i < N; i++) {
-      const el = tileEls[i];
+      const pair = Math.floor(i / 2);
+      const isA = i % 2 === 0;
+      const phiDeg = pair * 46 + angle * 1.1;
+      const phi = phiDeg * DEG;
+      if (pair === PAIRS - 1) bottomPhiRad = phi;
 
-      // POSE 0: Tilted Double-Sided 3D Exhibition Ring
+      // Skip full 3D tile DOM transforms once hero is scrolled completely off-screen
+      if (!heroOnScreen && pair < PAIRS - 1) continue;
+
       const thetaDeg = i * STEP + angle;
       const theta = thetaDeg * DEG;
       const x0 = radius * Math.sin(theta);
@@ -264,34 +492,28 @@ export function initRing3D(tiles) {
       const zRing = y1 * sinX + z0 * cosX - radius * 0.5;
       const ryRing = normDeg(thetaDeg);
 
-      // POSE 1: VERTICAL (Top -> Bottom) 3D DNA Double Helix
-      const pair = Math.floor(i / 2);
-      const isA = i % 2 === 0;
-      const phiDeg = pair * 46 + angle * 1.1;
-      const phi = phiDeg * DEG;
-      if (pair === PAIRS - 1) bottomPhiRad = phi;
-
       const xDna = (isA ? 1 : -1) * dnaR * Math.sin(phi);
       const yDna = (pair - (PAIRS - 1) / 2) * dnaDy + dnaYShift;
       const zDna = (isA ? 1 : -1) * dnaR * Math.cos(phi) - 35;
 
-      const ryDna = (isA ? 1 : -1) * Math.cos(phi) * 14;
-      const rxDna = -(isA ? 1 : -1) * Math.sin(phi) * 6;
-
       const x = lerp(xRing, xDna, e);
       const y = lerp(yRing, yDna, e);
       const z = lerp(zRing, zDna, e);
-      const rx = lerp(TILT_X, rxDna, e);
-      const rz = lerp(TILT_Z, 0, e);
-      const ry = lerp(ryRing, ryDna, e);
-      const sc = lerp(1, dnaScale, e);
 
-      const isAct = i === ringActiveIdx && spotlightStrength > 0.05;
-      const zLift = isAct ? 36 * spotlightStrength : 0;
-      const scMult = isAct ? lerp(1, 1.11, spotlightStrength) : 1;
+      if (heroOnScreen) {
+        const ryDna = (isA ? 1 : -1) * Math.cos(phi) * 14;
+        const rxDna = -(isA ? 1 : -1) * Math.sin(phi) * 6;
+        const rx = lerp(TILT_X, rxDna, e);
+        const rz = lerp(TILT_Z, 0, e);
+        const ry = lerp(ryRing, ryDna, e);
+        const sc = lerp(1, dnaScale, e);
 
-      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${(z + zLift).toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${(sc * scMult).toFixed(3)})`;
-      el.classList.toggle("is-active", isAct);
+        const isAct = i === activeTargetIdx;
+        const zLift = isAct ? 36 * spotlightStrength : 0;
+        const scMult = isAct ? lerp(1, 1.11, spotlightStrength) : 1;
+
+        tileEls[i].style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${(z + zLift).toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${(sc * scMult).toFixed(3)})`;
+      }
 
       if (z > maxZ) { maxZ = z; frontMostIdx = i; }
 
@@ -301,15 +523,9 @@ export function initRing3D(tiles) {
       else strandB.push(pt);
     }
 
-    // ONE SINGLE CONTINUOUS SVG: HERO 3D DNA -> TWISTING HELICAL FUNNEL -> CAREER SPINE
-    if (unifiedSvg && strandA.length && strandB.length) {
-      unifiedSvg.setAttribute("viewBox", `0 0 ${Math.round(ww)} ${Math.round(wh)}`);
-
-      const spineCx = anchorRect.width > 0 ? (anchorRect.left - worldRect.left + anchorRect.width / 2) : ww / 2;
+    // ONE SINGLE CONTINUOUS SVG (Persistent DOM nodes — 0 innerHTML calls per frame)
+    if (svgScene && strandA.length && strandB.length) {
       const lowerAmp = isPhone ? 10 : (isMid ? 24 : 32);
-      const helixTopY = helixRect.top - worldRect.top;
-      const helixBotY = helixRect.bottom - worldRect.top - 16;
-
       const heroOp = e <= 0.28 ? 0 : Math.min((e - 0.28) / 0.52, 1);
       const funnelOp = heroOp * Math.min(Math.max((e - 0.24) / 0.44, 0), 1);
 
@@ -331,9 +547,10 @@ export function initRing3D(tiles) {
       const openT = funnelOp;
       const flowPtsA = [];
       const flowPtsB = [];
-      let flowRungs = "";
+      let funnelRungsD = "";
+      let spineRungsD = "";
       let phi = bottomPhiRad;
-      const stepY = 6;
+      const stepY = 18;
       let rungAccum = 0;
 
       for (let y = yStart; y <= helixBotY; y += stepY) {
@@ -354,19 +571,20 @@ export function initRing3D(tiles) {
         const ay = y + offAY * (1 - effUAmp);
         const by = y + offBY * (1 - effUAmp);
 
-        flowPtsA.push({ x: ax, y: ay, u: effUAmp, s });
-        flowPtsB.push({ x: bx, y: by, u: effUAmp, s });
+        flowPtsA.push({ x: ax, y: ay });
+        flowPtsB.push({ x: bx, y: by });
 
         rungAccum += stepY;
-        const rungGap = lerp(isPhone ? 30 : 26, 22, effUAmp);
+        const rungGap = lerp(isPhone ? 32 : 28, 24, effUAmp);
         if (rungAccum >= rungGap && y > yStart + 14 && y < helixBotY - 38) {
           rungAccum = 0;
           const spread = Math.abs(s) * topClose * botClose;
-          if (spread > 0.16) {
-            const vis = y < helixTopY ? funnelOp : 1;
-            if (vis > 0.04) {
-              const rop = ((0.09 + spread * 0.24) * vis).toFixed(2);
-              flowRungs += `<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#14151A" stroke-opacity="${rop}" stroke-width="1.2"/>`;
+          if (spread > 0.22) {
+            const seg = `M${ax.toFixed(1)},${ay.toFixed(1)}L${bx.toFixed(1)},${by.toFixed(1)}`;
+            if (y < helixTopY) {
+              if (funnelOp > 0.04) funnelRungsD += seg;
+            } else {
+              spineRungsD += seg;
             }
           }
         }
@@ -375,79 +593,53 @@ export function initRing3D(tiles) {
       }
 
       if (flowPtsA.length > 0) {
-        flowPtsA.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
-        flowPtsB.push({ x: spineCx, y: helixBotY, u: 1, s: 0 });
+        flowPtsA.push({ x: spineCx, y: helixBotY });
+        flowPtsB.push({ x: spineCx, y: helixBotY });
       }
 
-      function smoothBezierSlice(arr, from, to, tailGuide, headGuide) {
-        if (to <= from || arr.length < 2) return "";
-        const last = Math.min(to, arr.length - 1);
-        let d = `M${arr[from].x.toFixed(1)},${arr[from].y.toFixed(1)}`;
-        for (let k = from; k < last; k++) {
-          const p0 = k > 0 ? arr[k - 1] : (headGuide || arr[0]);
-          const p1 = arr[k];
-          const p2 = arr[k + 1];
-          const p3 = k + 2 < arr.length ? arr[k + 2] : (tailGuide || p2);
-          const c1x = p1.x + (p2.x - p0.x) / 6;
-          const c1y = p1.y + (p2.y - p0.y) / 6;
-          const c2x = p2.x - (p3.x - p1.x) / 6;
-          const c2y = p2.y - (p3.y - p1.y) / 6;
-          d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-        }
-        return d;
-      }
-
-      function buildHeroCurve(strand, isA) {
-        const sign = isA ? 1 : -1;
-        const pts = [];
-        const SUB = 6;
-        for (let p = 0; p < strand.length - 1; p++) {
-          const s0 = strand[p];
-          const s1 = strand[p + 1];
-          for (let k = 0; k < SUB; k++) {
-            const t = k / SUB;
-            const pairF = p + t;
-            const pPhi = (pairF * 46 + angle * 1.1) * DEG;
-            const xDna = sign * dnaR * Math.sin(pPhi);
-            const yDna = (pairF - (PAIRS - 1) / 2) * dnaDy + dnaYShift;
-            const zDna = sign * dnaR * Math.cos(pPhi) - 35;
-            const x = lerp(lerp(s0.rx, s1.rx, t), xDna, e);
-            const y = lerp(lerp(s0.ry, s1.ry, t), yDna, e);
-            const z = lerp(lerp(s0.rz, s1.rz, t), zDna, e);
-            const pf = persp / Math.max(persp - z, 120);
-            pts.push({ x: stageCx + x * pf, y: stageCy + y * pf });
-          }
-        }
-        const last = strand[strand.length - 1];
-        pts.push({ x: last.x, y: last.y });
-        return pts;
-      }
-
-      let heroRungs = "";
-      let heroStrandSvg = "";
+      const showHeroSvg = heroOnScreen && heroOp > 0.01 && strandA.length >= 2;
       let heroPrevA = null;
       let heroPrevB = null;
-      if (heroOp > 0.01) {
+      if (showHeroSvg) {
+        if (!heroVisibleLast) {
+          svgScene.heroRungsPath.removeAttribute("display");
+          svgScene.heroPathA.removeAttribute("display");
+          svgScene.heroPathB.removeAttribute("display");
+          svgScene.heroMidGroup.removeAttribute("display");
+          heroVisibleLast = true;
+        }
         const rungPairs = Math.min(strandA.length, strandB.length);
+        let heroRungsD = "";
+        const midOp = (0.8 * heroOp).toFixed(2);
         for (let p = 0; p < rungPairs; p++) {
           const a = strandA[p];
           const b = strandB[p];
-          const mx = (a.x + b.x) / 2;
-          const my = (a.y + b.y) / 2;
-          heroRungs += `
-            <line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"
-              stroke="#14151A" stroke-opacity="${(0.22 * heroOp).toFixed(2)}" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3" fill="#E8431F" fill-opacity="${(0.8 * heroOp).toFixed(2)}"/>
-          `;
+          heroRungsD += `M${a.x.toFixed(1)},${a.y.toFixed(1)}L${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+          const dot = svgScene.heroMidDots[p];
+          if (dot) {
+            dot.setAttribute("cx", ((a.x + b.x) * 0.5).toFixed(1));
+            dot.setAttribute("cy", ((a.y + b.y) * 0.5).toFixed(1));
+            dot.setAttribute("fill-opacity", midOp);
+          }
         }
-        const heroCurveA = buildHeroCurve(strandA, true);
-        const heroCurveB = buildHeroCurve(strandB, false);
+        svgScene.heroRungsPath.setAttribute("d", heroRungsD);
+        svgScene.heroRungsPath.setAttribute("stroke-opacity", (0.22 * heroOp).toFixed(2));
+
+        const heroCurveA = buildHeroCurve(strandA, true, angle, dnaR, dnaDy, dnaYShift, e, stageCx, stageCy);
+        const heroCurveB = buildHeroCurve(strandB, false, angle, dnaR, dnaDy, dnaYShift, e, stageCx, stageCy);
         heroPrevA = heroCurveA[heroCurveA.length - 2] || null;
         heroPrevB = heroCurveB[heroCurveB.length - 2] || null;
-        heroStrandSvg = `
-          <path d="${smoothBezierSlice(heroCurveB, 0, heroCurveB.length - 1, flowPtsB[1])}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="${smoothBezierSlice(heroCurveA, 0, heroCurveA.length - 1, flowPtsA[1])}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * heroOp).toFixed(2)}" stroke-width="2.4" stroke-linecap="round"/>
-        `;
+
+        svgScene.heroPathB.setAttribute("d", smoothBezierSlice(heroCurveB, 0, heroCurveB.length - 1, flowPtsB[1]));
+        svgScene.heroPathB.setAttribute("stroke-opacity", (0.84 * heroOp).toFixed(2));
+        svgScene.heroPathA.setAttribute("d", smoothBezierSlice(heroCurveA, 0, heroCurveA.length - 1, flowPtsA[1]));
+        svgScene.heroPathA.setAttribute("stroke-opacity", (0.88 * heroOp).toFixed(2));
+      } else if (heroVisibleLast) {
+        svgScene.heroRungsPath.setAttribute("display", "none");
+        svgScene.heroPathA.setAttribute("display", "none");
+        svgScene.heroPathB.setAttribute("display", "none");
+        svgScene.heroMidGroup.setAttribute("display", "none");
+        heroVisibleLast = false;
       }
 
       let splitIdx = flowPtsA.findIndex((p) => p.y >= helixTopY);
@@ -458,67 +650,93 @@ export function initRing3D(tiles) {
       const spineSliceB = closedTip ? [{ x: spineCx, y: helixTopY }, ...flowPtsB.slice(splitIdx)] : flowPtsB;
       const spineStartIdx = closedTip ? 0 : splitIdx;
 
-      const funnelPathA = !closedTip ? `<path d="${smoothBezierSlice(flowPtsA, 0, splitIdx, null, heroPrevA)}" fill="none" stroke="#14151A" stroke-opacity="${(0.88 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
-      const funnelPathB = !closedTip ? `<path d="${smoothBezierSlice(flowPtsB, 0, splitIdx, null, heroPrevB)}" fill="none" stroke="#E8431F" stroke-opacity="${(0.84 * funnelOp).toFixed(2)}" stroke-width="2.1" stroke-linecap="round"/>` : "";
-      const spinePathA = `<path d="${smoothBezierSlice(spineSliceA, spineStartIdx, spineSliceA.length - 1)}" fill="none" stroke="#14151A" stroke-opacity="0.88" stroke-width="2" stroke-linecap="round"/>`;
-      const spinePathB = `<path d="${smoothBezierSlice(spineSliceB, spineStartIdx, spineSliceB.length - 1)}" fill="none" stroke="#E8431F" stroke-opacity="0.84" stroke-width="2" stroke-linecap="round"/>`;
-      const originOp = Math.max(0, 1 - openT * 1.4);
-      const originDot = flowPtsA.length > 2 && originOp > 0.02
-        ? `<circle cx="${spineCx.toFixed(1)}" cy="${helixTopY.toFixed(1)}" r="${lerp(4.4, 2.2, openT).toFixed(1)}" fill="#E8431F" fill-opacity="${originOp.toFixed(2)}" stroke="#F4F0E6" stroke-opacity="${originOp.toFixed(2)}" stroke-width="2"/>`
-        : "";
-      const termDot = flowPtsA.length > 2
-        ? `<circle cx="${spineCx.toFixed(1)}" cy="${helixBotY.toFixed(1)}" r="4.4" fill="#E8431F" stroke="#F4F0E6" stroke-width="2"/>`
-        : "";
+      if (!closedTip) {
+        if (!funnelVisibleLast) {
+          svgScene.funnelPathA.removeAttribute("display");
+          svgScene.funnelPathB.removeAttribute("display");
+          svgScene.funnelRungsPath.removeAttribute("display");
+          funnelVisibleLast = true;
+        }
+        svgScene.funnelPathA.setAttribute("d", smoothBezierSlice(flowPtsA, 0, splitIdx, null, heroPrevA));
+        svgScene.funnelPathA.setAttribute("stroke-opacity", (0.88 * funnelOp).toFixed(2));
+        svgScene.funnelPathB.setAttribute("d", smoothBezierSlice(flowPtsB, 0, splitIdx, null, heroPrevB));
+        svgScene.funnelPathB.setAttribute("stroke-opacity", (0.84 * funnelOp).toFixed(2));
+        svgScene.funnelRungsPath.setAttribute("d", funnelRungsD);
+        svgScene.funnelRungsPath.setAttribute("stroke-opacity", (0.22 * funnelOp).toFixed(2));
+      } else if (funnelVisibleLast) {
+        svgScene.funnelPathA.setAttribute("display", "none");
+        svgScene.funnelPathB.setAttribute("display", "none");
+        svgScene.funnelRungsPath.setAttribute("display", "none");
+        funnelVisibleLast = false;
+      }
 
-      let pulses = "";
-      if (!reducedMotion && funnelOp > 0.2 && flowPtsA.length > 10) {
+      svgScene.spineRungsPath.setAttribute("d", spineRungsD);
+      svgScene.spinePathA.setAttribute("d", smoothBezierSlice(spineSliceA, spineStartIdx, spineSliceA.length - 1));
+      svgScene.spinePathB.setAttribute("d", smoothBezierSlice(spineSliceB, spineStartIdx, spineSliceB.length - 1));
+
+      const originOp = Math.max(0, 1 - openT * 1.4);
+      if (flowPtsA.length > 2 && originOp > 0.02) {
+        svgScene.originDot.removeAttribute("display");
+        svgScene.originDot.setAttribute("cx", spineCx.toFixed(1));
+        svgScene.originDot.setAttribute("cy", helixTopY.toFixed(1));
+        svgScene.originDot.setAttribute("r", lerp(4.4, 2.2, openT).toFixed(1));
+        svgScene.originDot.setAttribute("fill-opacity", originOp.toFixed(2));
+        svgScene.originDot.setAttribute("stroke-opacity", originOp.toFixed(2));
+      } else {
+        svgScene.originDot.setAttribute("display", "none");
+      }
+
+      if (flowPtsA.length > 2) {
+        svgScene.termDot.removeAttribute("display");
+        svgScene.termDot.setAttribute("cx", spineCx.toFixed(1));
+        svgScene.termDot.setAttribute("cy", helixBotY.toFixed(1));
+      } else {
+        svgScene.termDot.setAttribute("display", "none");
+      }
+
+      if (!reducedMotion && funnelOp > 0.2 && flowPtsA.length > 6) {
         const pIdxA = Math.floor(pulseClock * (flowPtsA.length - 1));
         const pIdxB = Math.floor(((pulseClock + 0.5) % 1) * (flowPtsB.length - 1));
         const pA = flowPtsA[pIdxA];
         const pB = flowPtsB[pIdxB];
-        pulses = `
-          <circle cx="${pA.x.toFixed(1)}" cy="${pA.y.toFixed(1)}" r="4.2" fill="#14151A" fill-opacity="${(0.22 * funnelOp).toFixed(2)}"/>
-          <circle cx="${pA.x.toFixed(1)}" cy="${pA.y.toFixed(1)}" r="2.2" fill="#14151A" fill-opacity="${(0.92 * funnelOp).toFixed(2)}"/>
-          <circle cx="${pB.x.toFixed(1)}" cy="${pB.y.toFixed(1)}" r="4.2" fill="#E8431F" fill-opacity="${(0.26 * funnelOp).toFixed(2)}"/>
-          <circle cx="${pB.x.toFixed(1)}" cy="${pB.y.toFixed(1)}" r="2.2" fill="#E8431F" fill-opacity="${(0.96 * funnelOp).toFixed(2)}"/>
-        `;
+        svgScene.pulsesGroup.removeAttribute("display");
+        svgScene.pulseOuterA.setAttribute("cx", pA.x.toFixed(1));
+        svgScene.pulseOuterA.setAttribute("cy", pA.y.toFixed(1));
+        svgScene.pulseOuterA.setAttribute("fill-opacity", (0.22 * funnelOp).toFixed(2));
+        svgScene.pulseInnerA.setAttribute("cx", pA.x.toFixed(1));
+        svgScene.pulseInnerA.setAttribute("cy", pA.y.toFixed(1));
+        svgScene.pulseInnerA.setAttribute("fill-opacity", (0.92 * funnelOp).toFixed(2));
+        svgScene.pulseOuterB.setAttribute("cx", pB.x.toFixed(1));
+        svgScene.pulseOuterB.setAttribute("cy", pB.y.toFixed(1));
+        svgScene.pulseOuterB.setAttribute("fill-opacity", (0.26 * funnelOp).toFixed(2));
+        svgScene.pulseInnerB.setAttribute("cx", pB.x.toFixed(1));
+        svgScene.pulseInnerB.setAttribute("cy", pB.y.toFixed(1));
+        svgScene.pulseInnerB.setAttribute("fill-opacity", (0.96 * funnelOp).toFixed(2));
+      } else {
+        svgScene.pulsesGroup.setAttribute("display", "none");
       }
 
-      let beads = "";
       const spineLen = flowPtsA.length - 1 - splitIdx;
-      if (isPhone && spineLen > 12) {
-        const padTop = Math.floor(spineLen * (isPhone ? 0.05 : 0.1));
+      if (isPhone && spineLen > 6) {
+        svgScene.beadsGroup.removeAttribute("display");
+        const padTop = Math.floor(spineLen * 0.05);
         const padBot = Math.floor(spineLen * 0.07);
-        const usable = Math.max(spineLen - padTop - padBot, 10);
+        const usable = Math.max(spineLen - padTop - padBot, 6);
         for (let i = 0; i < N; i++) {
           const k = Math.min(flowPtsA.length - 2, splitIdx + padTop + Math.round((i / Math.max(N - 1, 1)) * usable));
           const pt = i % 2 === 0 ? flowPtsA[k] : flowPtsB[k];
-          const { bg } = tileStyles[i];
-          const isLight = tileIsLight[i];
-          const isPulse = activeEraSet.has(i);
-          const r = isPhone ? 4.2 : (isPulse ? 7.4 : 5.8);
-          const beadStroke = isLight ? "rgba(20,21,26,0.45)" : "#F4F0E6";
-          const beadSw = isLight ? "1.4" : "1.9";
-          beads += `<circle class="dna-bead ${isPulse ? "pulse" : ""}" data-proj="${i}" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${r}" fill="${bg}" stroke="${beadStroke}" stroke-width="${beadSw}"/>`;
+          const bead = svgScene.mobileBeads[i];
+          bead.setAttribute("cx", pt.x.toFixed(1));
+          bead.setAttribute("cy", pt.y.toFixed(1));
         }
+      } else {
+        svgScene.beadsGroup.setAttribute("display", "none");
       }
-
-      unifiedSvg.innerHTML = `
-        ${heroRungs}
-        ${flowRungs}
-        ${funnelPathB}
-        ${funnelPathA}
-        ${spinePathB}
-        ${spinePathA}
-        ${heroStrandSvg}
-        ${pulses}
-        ${beads}
-        ${originDot}
-        ${termDot}
-      `;
     }
 
-    updateCaption(hoveredTile >= 0 ? hoveredTile : (e > 0.5 ? frontMostIdx : ringFrontIdx));
+    if (heroOnScreen) {
+      updateCaption(hoveredTile >= 0 ? hoveredTile : (e > 0.5 ? frontMostIdx : ringFrontIdx));
+    }
 
     requestAnimationFrame(tick);
   }
