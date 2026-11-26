@@ -34,11 +34,12 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   unifiedSvg.textContent = "";
 
   const orbitGroup = makeSvg("g");
-  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.75", "stroke-linecap": "round" });
-  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.75", "stroke-linecap": "round" });
+  const orbitHaloPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1", "stroke-dasharray": "3 6" });
+  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.8", "stroke-linecap": "round" });
+  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.8", "stroke-linecap": "round" });
   const orbitPulseA = makeSvg("circle", { r: "3.1", fill: "#14151A" });
   const orbitPulseB = makeSvg("circle", { r: "3.1", fill: "#E8431F" });
-  orbitGroup.append(orbitPathB, orbitPathA, orbitPulseA, orbitPulseB);
+  orbitGroup.append(orbitHaloPath, orbitPathB, orbitPathA, orbitPulseA, orbitPulseB);
 
   const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
   const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
@@ -91,7 +92,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   );
 
   return {
-    orbitGroup, orbitPathA, orbitPathB, orbitPulseA, orbitPulseB,
+    orbitGroup, orbitHaloPath, orbitPathA, orbitPathB, orbitPulseA, orbitPulseB,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, heroMidDots,
@@ -320,8 +321,9 @@ export function initRing3D(tiles) {
   }
 
   /**
-   * Projects two continuous C1-tangent ribbons that wrap the 3D Ring and peel smoothly
-   * off the left (Obsidian) and right (Signal Orange) flanks straight into the DNA origin node.
+   * Projects a geometrically pure tilted 3D orbital halo plus two symmetric, non-overlapping
+   * C1-tangent ribbons (Obsidian left flank, Signal Orange right flank) flowing smoothly into
+   * the DNA origin node (spineCx, helixTopY) with zero kinks, wobble, or stub ends.
    */
   function renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e) {
     const orbitOp = Math.max(0, 1 - e * 2.25);
@@ -338,77 +340,104 @@ export function initRing3D(tiles) {
     }
 
     const shrink = lerp(1, 0.72, Math.min(e * 2, 1));
-    const baseR = Math.min(radius * (isPhone ? 1.14 : 1.24), hw * (isPhone ? 0.44 : 0.42)) * shrink;
-    const phase = angle * DEG * 1.4;
-    const ARC_SEG = 28;
-    const TAIL_SEG = 10;
-    const waveY = isPhone ? 5.5 : 8;
+    const baseR = Math.min(radius * (isPhone ? 1.15 : 1.24), hw * (isPhone ? 0.44 : 0.42)) * shrink;
 
-    const projectOrbit = (th, sign) => {
-      const r = baseR * (1 + sign * 0.025 * Math.cos(3 * th + phase));
-      const x0 = r * Math.sin(th);
-      const z0 = r * Math.cos(th);
-      const y0 = sign * Math.sin(3 * th + phase) * waveY;
-      const x1 = x0 * cosZ - y0 * sinZ;
-      const y1 = x0 * sinZ + y0 * cosZ;
+    const projectOrbit = (th) => {
+      const x0 = baseR * Math.sin(th);
+      const z0 = baseR * Math.cos(th);
+      const x1 = x0 * cosZ;
+      const y1 = x0 * sinZ;
       const y2 = y1 * cosX - z0 * sinX;
       const z2 = y1 * sinX + z0 * cosX - radius * 0.5;
       const pf = persp / Math.max(persp - z2, 120);
       return { x: stageCx + x1 * pf, y: stageCy + y2 * pf };
     };
 
-    // Build ONE continuous unbroken path per strand:
-    //   Obsidian (side=-1): sweeps front -> right -> back -> peels vertically off LEFT outer flank (-90°) -> curves wide-left into origin
-    //   Orange   (side=+1): sweeps front -> left -> back -> peels vertically off RIGHT outer flank (+90°) -> curves wide-right into origin
-    const buildUnwindRibbon = (side) => {
-      const pts = [];
-      const startDeg = side < 0 ? 55 : -55;
-      const peelDeg = side < 0 ? 270 : -270; // 270° = -90° (left flank), -270° = +90° (right flank), both moving straight DOWN!
-      for (let k = 0; k <= ARC_SEG; k++) {
-        const th = lerp(startDeg, peelDeg, k / ARC_SEG) * DEG;
-        pts.push(projectOrbit(th, -side));
-      }
-      const p0 = pts[pts.length - 1];
-      const dy = Math.max(80, helixTopY - p0.y);
-      const flankOut = isPhone ? (side < 0 ? 4 : 10) : 26;
-      const c1x = p0.x + side * flankOut;
-      const c1y = p0.y + dy * 0.44;
-      const c2x = spineCx + side * (isPhone ? (side < 0 ? 10 : 34) : 56);
-      const c2y = helixTopY - dy * 0.24;
+    // Subtle 360° dashed 3D orbital halo track
+    const HALO_SEG = 36;
+    const haloPts = [];
+    for (let k = 0; k <= HALO_SEG; k++) {
+      haloPts.push(projectOrbit((k / HALO_SEG) * Math.PI * 2));
+    }
+    svgScene.orbitHaloPath.setAttribute("d", `${smoothBezierSlice(haloPts, 0, HALO_SEG)} Z`);
+    svgScene.orbitHaloPath.setAttribute("stroke-opacity", (0.2 * orbitOp).toFixed(2));
 
-      for (let k = 1; k <= TAIL_SEG; k++) {
-        const t = k / TAIL_SEG;
-        const mt = 1 - t;
-        pts.push({
-          x: mt * mt * mt * p0.x + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * spineCx,
-          y: mt * mt * mt * p0.y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * helixTopY,
-        });
+    // Symmetric non-overlapping ribbons starting behind back-center (180°):
+    //   Obsidian (side=-1): sweeps 180° -> 286° (-74°, lower-left flank), exits via exact native SVG cubic Bezier
+    //   Orange   (side=+1): sweeps 180° ->  74° (+74°, lower-right flank), exits via exact native SVG cubic Bezier
+    const buildCradleRibbon = (side) => {
+      const ARC_SEG = 32;
+      const startDeg = 180;
+      const peelDeg = side < 0 ? 286 : 74;
+      const arcPts = [];
+      for (let k = 0; k <= ARC_SEG; k++) {
+        arcPts.push(projectOrbit(lerp(startDeg, peelDeg, k / ARC_SEG) * DEG));
       }
-      return pts;
+
+      const peelRad = peelDeg * DEG;
+      const dir = side < 0 ? 1 : -1;
+      const p0 = arcPts[ARC_SEG];
+      const stepRad = Math.abs(peelDeg - startDeg) / ARC_SEG * DEG;
+      const tailGuide = projectOrbit(peelRad + dir * stepRad);
+
+      const pPrev = projectOrbit(peelRad - dir * 0.008);
+      const pNext = projectOrbit(peelRad + dir * 0.008);
+      const vx = pNext.x - pPrev.x;
+      const vy = pNext.y - pPrev.y;
+      const vLen = Math.hypot(vx, vy) || 1;
+      const utx = vx / vLen;
+      const uty = vy / vLen;
+
+      const distToOrigin = Math.hypot(spineCx - p0.x, helixTopY - p0.y);
+      const dy = Math.max(60, helixTopY - p0.y);
+      const handleLen = Math.min(distToOrigin * 0.34, dy * 0.52);
+
+      const c1x = p0.x + utx * handleLen;
+      const c1y = p0.y + uty * handleLen;
+      const c2x = spineCx + side * (isPhone ? (side < 0 ? 6 : 22) : 14);
+      const c2y = helixTopY - dy * 0.36;
+
+      const d = `${smoothBezierSlice(arcPts, 0, ARC_SEG, tailGuide)} C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`;
+
+      const sampleAt = (t) => {
+        if (t <= 0.5) {
+          const u = t / 0.5;
+          return arcPts[Math.min(ARC_SEG, Math.round(u * ARC_SEG))];
+        }
+        const u = (t - 0.5) / 0.5;
+        const mu = 1 - u;
+        return {
+          x: mu * mu * mu * p0.x + 3 * mu * mu * u * c1x + 3 * mu * u * u * c2x + u * u * u * spineCx,
+          y: mu * mu * mu * p0.y + 3 * mu * mu * u * c1y + 3 * mu * u * u * c2y + u * u * u * helixTopY,
+        };
+      };
+
+      return { d, sampleAt };
     };
 
-    const ptsA = buildUnwindRibbon(-1);
-    const ptsB = buildUnwindRibbon(1);
+    const ribA = buildCradleRibbon(-1);
+    const ribB = buildCradleRibbon(1);
 
-    svgScene.orbitPathA.setAttribute("d", smoothBezierSlice(ptsA, 0, ptsA.length - 1));
-    svgScene.orbitPathA.setAttribute("stroke-opacity", (0.58 * orbitOp).toFixed(2));
-    svgScene.orbitPathB.setAttribute("d", smoothBezierSlice(ptsB, 0, ptsB.length - 1));
-    svgScene.orbitPathB.setAttribute("stroke-opacity", (0.66 * orbitOp).toFixed(2));
+    svgScene.orbitPathA.setAttribute("d", ribA.d);
+    svgScene.orbitPathA.setAttribute("stroke-opacity", (0.62 * orbitOp).toFixed(2));
+    svgScene.orbitPathB.setAttribute("d", ribB.d);
+    svgScene.orbitPathB.setAttribute("stroke-opacity", (0.72 * orbitOp).toFixed(2));
 
     if (!reducedMotion) {
-      const idxA = Math.min(ptsA.length - 1, Math.floor(pulseClock * (ptsA.length - 1)));
-      const idxB = Math.min(ptsB.length - 1, Math.floor(((pulseClock + 0.5) % 1) * (ptsB.length - 1)));
-      const pA = ptsA[idxA];
-      const pB = ptsB[idxB];
-      const pulseOp = (0.86 * orbitOp).toFixed(2);
+      const tA = pulseClock;
+      const tB = (pulseClock + 0.5) % 1;
+      const fadeA = Math.min(tA / 0.1, (1 - tA) / 0.1, 1);
+      const fadeB = Math.min(tB / 0.1, (1 - tB) / 0.1, 1);
+      const pA = ribA.sampleAt(tA);
+      const pB = ribB.sampleAt(tB);
       svgScene.orbitPulseA.removeAttribute("display");
       svgScene.orbitPulseB.removeAttribute("display");
       svgScene.orbitPulseA.setAttribute("cx", pA.x.toFixed(1));
       svgScene.orbitPulseA.setAttribute("cy", pA.y.toFixed(1));
-      svgScene.orbitPulseA.setAttribute("fill-opacity", pulseOp);
+      svgScene.orbitPulseA.setAttribute("fill-opacity", (0.88 * orbitOp * fadeA).toFixed(2));
       svgScene.orbitPulseB.setAttribute("cx", pB.x.toFixed(1));
       svgScene.orbitPulseB.setAttribute("cy", pB.y.toFixed(1));
-      svgScene.orbitPulseB.setAttribute("fill-opacity", pulseOp);
+      svgScene.orbitPulseB.setAttribute("fill-opacity", (0.9 * orbitOp * fadeB).toFixed(2));
     } else {
       svgScene.orbitPulseA.setAttribute("display", "none");
       svgScene.orbitPulseB.setAttribute("display", "none");
