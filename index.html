@@ -167,6 +167,20 @@
     <span id="dna-tt-swatch" class="dna-tooltip-swatch"></span>
     <span id="dna-tt-text"></span>
   </div>
+  <div id="tri-modal" class="tri-modal" role="dialog" aria-modal="true" aria-labelledby="tri-modal-title" hidden>
+    <div class="tri-sheet">
+      <div class="tri-sheet-head">
+        <div>
+          <div class="tri-sheet-kicker">Endurance Telemetry · Unlocked</div>
+          <h2 id="tri-modal-title" class="tri-sheet-title">Triathlon Race Log</h2>
+        </div>
+        <button id="tri-modal-close" class="tri-sheet-close" type="button" aria-label="Close race log">Close ✕</button>
+      </div>
+      <div id="tri-pb-strip" class="tri-pb-strip"></div>
+      <div id="tri-dist-tabs" class="tri-dist-tabs" role="tablist"></div>
+      <div id="tri-race-list" class="tri-race-list"></div>
+    </div>
+  </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="./js/main.js"></script>

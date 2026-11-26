@@ -106,8 +106,152 @@ function renderFoundationCard(f, stats) {
   return "";
 }
 
-function initAvatarEasterEgg(quotes, showToast) {
+function parseDurationSec(timeStr) {
+  if (!timeStr) return Infinity;
+  const approx = timeStr.trim().startsWith("~");
+  const clean = timeStr.replace(/^~/, "").trim();
+  const parts = clean.split(":").map(Number);
+  if (parts.length < 2 || parts.some(Number.isNaN)) return Infinity;
+  const sec = parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+  return approx ? sec + 0.5 : sec;
+}
+
+function distSortKey(dist) {
+  const num = parseFloat(dist);
+  return Number.isNaN(num) ? -1 : num;
+}
+
+function initTriathlonLog(races) {
+  const modal = document.getElementById("tri-modal");
+  const closeBtn = document.getElementById("tri-modal-close");
+  const pbEl = document.getElementById("tri-pb-strip");
+  const tabsEl = document.getElementById("tri-dist-tabs");
+  const listEl = document.getElementById("tri-race-list");
+  if (!modal || !pbEl || !tabsEl || !listEl || !races?.length) return null;
+
+  let activeDist = "All";
+  let isOpen = false;
+  let closeTimer = null;
+
+  const finished = races.filter((r) => r.status !== "upcoming");
+  const upcoming = races.filter((r) => r.status === "upcoming");
+  const distances = [...new Set(races.map((r) => r.distance || "Other"))].sort((a, b) => distSortKey(b) - distSortKey(a));
+
+  // Auto-compute PB per numeric distance (sorted longest -> shortest, up to 3 PB cards)
+  const pbCards = distances
+    .filter((d) => distSortKey(d) > 0)
+    .map((d) => {
+      const timed = finished
+        .filter((r) => r.distance === d && Number.isFinite(parseDurationSec(r.time)))
+        .sort((a, b) => parseDurationSec(a.time) - parseDurationSec(b.time));
+      return timed[0] ? { dist: d, best: timed[0] } : null;
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+
+  pbEl.innerHTML = [
+    `<div class="tri-pb-card">
+      <div class="tri-pb-lbl">Races Logged</div>
+      <div class="tri-pb-val">${finished.length}</div>
+      <div class="tri-pb-sub">${upcoming.length ? `+${upcoming.length} upcoming` : "Multi-distance"}</div>
+    </div>`,
+    ...pbCards.map(
+      ({ dist, best }) => `
+      <div class="tri-pb-card">
+        <div class="tri-pb-lbl">Best ${dist}</div>
+        <div class="tri-pb-val">${best.time}</div>
+        <div class="tri-pb-sub">${best.date.slice(0, 4)} · ${best.location || best.event}</div>
+      </div>`
+    ),
+  ].join("");
+
+  const renderRaces = () => {
+    const visible = activeDist === "All" ? races : races.filter((r) => (r.distance || "Other") === activeDist);
+    listEl.innerHTML = visible
+      .map((r) => {
+        const isUpcoming = r.status === "upcoming";
+        const timeHtml = r.time
+          ? `<span class="tri-rr-time">${r.time}</span>`
+          : `<span class="tri-rr-badge ${isUpcoming ? "is-upcoming" : ""}">${isUpcoming ? "UPCOMING" : "FINISHER"}</span>`;
+
+        const links = [];
+        if (r.url) links.push(`<a class="tri-rr-link" href="${r.url}" target="_blank" rel="noreferrer">Result ↗</a>`);
+        if (r.portalUrl) links.push(`<a class="tri-rr-link is-sec" href="${r.portalUrl}" target="_blank" rel="noreferrer">Portal ↗</a>`);
+        const linksHtml = links.length ? `<span class="tri-rr-links">${links.join("")}</span>` : "";
+
+        const sp = r.splits;
+        const splitParts = [];
+        if (sp?.swim) splitParts.push(`<span><i class="tri-sp-dot" style="background:${TRI_META.swim.color}"></i>Swim ${sp.swim}</span>`);
+        if (sp?.t1) splitParts.push(`<span class="tri-sp-t">T1 ${sp.t1}</span>`);
+        if (sp?.bike) splitParts.push(`<span><i class="tri-sp-dot" style="background:${TRI_META.bike.color}"></i>Bike ${sp.bike}</span>`);
+        if (sp?.t2) splitParts.push(`<span class="tri-sp-t">T2 ${sp.t2}</span>`);
+        if (sp?.run) splitParts.push(`<span><i class="tri-sp-dot" style="background:${TRI_META.run.color}"></i>Run ${sp.run}</span>`);
+        const splitsHtml = splitParts.length ? `<div class="tri-rr-splits">${splitParts.join("")}</div>` : "";
+
+        return `
+          <article class="tri-rr${isUpcoming ? " is-upcoming" : ""}">
+            <div class="tri-rr-top">
+              <span class="tri-rr-name">${r.event}</span>
+              ${timeHtml}
+            </div>
+            <div class="tri-rr-meta">
+              <div class="tri-rr-tags">
+                ${r.distance ? `<span class="tri-dist-pill">${r.distance}</span>` : ""}
+                <span>${r.date}${r.location ? ` · ${r.location}` : ""}</span>
+                ${r.note ? `<span>${r.note}</span>` : ""}
+              </div>
+              ${linksHtml}
+            </div>
+            ${splitsHtml}
+          </article>`;
+      })
+      .join("");
+  };
+
+  tabsEl.innerHTML = ["All", ...distances]
+    .map((d) => {
+      const cnt = d === "All" ? races.length : races.filter((r) => (r.distance || "Other") === d).length;
+      return `<button class="tri-d-tab ${d === "All" ? "active" : ""}" type="button" role="tab" data-dist="${d}">${d} (${cnt})</button>`;
+    })
+    .join("");
+
+  tabsEl.querySelectorAll(".tri-d-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeDist = btn.dataset.dist;
+      tabsEl.querySelectorAll(".tri-d-tab").forEach((b) => b.classList.toggle("active", b === btn));
+      renderRaces();
+    });
+  });
+
+  renderRaces();
+
+  const openModal = () => {
+    clearTimeout(closeTimer);
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => modal.classList.add("show"));
+    isOpen = true;
+  };
+
+  const closeModal = () => {
+    clearTimeout(closeTimer);
+    if (!isOpen) return;
+    isOpen = false;
+    modal.classList.remove("show");
+    document.body.style.overflow = "";
+    closeTimer = setTimeout(() => { if (!isOpen) modal.hidden = true; }, 200);
+  };
+
+  closeBtn?.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen) closeModal(); });
+
+  return { open: openModal, close: closeModal };
+}
+
+function initAvatarEasterEgg(quotes, races, showToast) {
   if (!quotes.length) return;
+  const raceModal = initTriathlonLog(races);
   const avatarBtn = document.getElementById("avatar-trigger");
   const avatarBubble = document.getElementById("avatar-bubble");
   const abTag = document.getElementById("ab-tag");
@@ -116,11 +260,12 @@ function initAvatarEasterEgg(quotes, showToast) {
 
   if (avatarBtn && avatarBubble) {
     let qIdx = -1;
+    let tapCount = 0;
     let isOpen = false;
     let pinned = false;
     let closeTimer = null;
 
-    const openBubble = () => {
+    const showBubble = (stepLabel) => {
       clearTimeout(closeTimer);
       qIdx = (qIdx + 1) % quotes.length;
       const q = quotes[qIdx];
@@ -129,7 +274,7 @@ function initAvatarEasterEgg(quotes, showToast) {
       avatarBtn.style.setProperty("--tri-accent", accent);
       avatarBubble.style.setProperty("--tri-accent", accent);
       abTag.innerHTML = `${meta.icon}<span>${q.tag}</span>`;
-      abStep.textContent = `${qIdx + 1}/${quotes.length} · TAP`;
+      abStep.textContent = stepLabel || `${qIdx + 1}/${quotes.length} · TAP`;
       abText.textContent = q.text;
       avatarBubble.hidden = false;
       requestAnimationFrame(() => avatarBubble.classList.add("show"));
@@ -154,30 +299,67 @@ function initAvatarEasterEgg(quotes, showToast) {
     };
 
     if (window.matchMedia("(hover: hover)").matches) {
-      avatarBtn.addEventListener("mouseenter", () => { if (!isOpen) openBubble(); });
+      avatarBtn.addEventListener("mouseenter", () => {
+        if (!isOpen) showBubble(raceModal ? "TAP 3× FOR LOG" : "");
+      });
       avatarBtn.addEventListener("mouseleave", () => scheduleClose(220));
       avatarBubble.addEventListener("mouseenter", () => clearTimeout(closeTimer));
       avatarBubble.addEventListener("mouseleave", () => scheduleClose(180));
     }
 
-    const cycle = (e) => { e.stopPropagation(); pinned = true; openBubble(); };
-    avatarBtn.addEventListener("click", cycle);
-    avatarBubble.addEventListener("click", cycle);
+    const handleTap = (e) => {
+      e.stopPropagation();
+      pinned = true;
+      if (!raceModal) {
+        showBubble();
+        return;
+      }
+      tapCount += 1;
+      if (tapCount >= 3) {
+        tapCount = 0;
+        showBubble("UNLOCKED ✓");
+        setTimeout(() => {
+          closeBubble();
+          raceModal.open();
+        }, 260);
+      } else {
+        const left = 3 - tapCount;
+        showBubble(`${tapCount}/3 · ${left} MORE TAP${left > 1 ? "S" : ""}`);
+      }
+    };
+
+    avatarBtn.addEventListener("click", handleTap);
+    avatarBubble.addEventListener("click", handleTap);
     document.addEventListener("click", (e) => { if (isOpen && !e.target.closest(".brand-group")) closeBubble(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen) closeBubble(); });
     window.addEventListener("scroll", () => { if (isOpen && window.scrollY > 40) closeBubble(); }, { passive: true });
   }
 
-  document.querySelectorAll(".tri-leg[data-tri-leg]").forEach((btn) => {
+  // Completing all 3 legs (SWIM + BIKE + RUN) in Highlights also unlocks the Race Log
+  const completedLegs = new Set();
+  const legBtns = Array.from(document.querySelectorAll(".tri-leg[data-tri-leg]"));
+  legBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const q = quotes.find((item) => item.leg === btn.dataset.triLeg);
+      const leg = btn.dataset.triLeg;
+      const q = quotes.find((item) => item.leg === leg);
+      if (raceModal) {
+        completedLegs.add(leg);
+        btn.classList.add("is-done");
+        if (completedLegs.size >= legBtns.length && legBtns.length >= 3) {
+          completedLegs.clear();
+          legBtns.forEach((b) => b.classList.remove("is-done"));
+          showToast("Triathlon complete ✓ Opening Race Log…", 1800);
+          setTimeout(() => raceModal.open(), 220);
+          return;
+        }
+      }
       if (q) showToast(`${q.tag} · ${q.text}`, 3400);
     });
   });
 }
 
 export function initUI(data) {
-  const { profile, projects, journey, certifications } = data;
+  const { profile, projects, journey, certifications, triathlonLog } = data;
   let activeCat = "All";
   let showAll = false;
   let certGroup = 0;
@@ -284,7 +466,7 @@ export function initUI(data) {
     showToast(`Copied ${profile.email}`);
   });
 
-  initAvatarEasterEgg(profile.avatarQuotes || [], showToast);
+  initAvatarEasterEgg(profile.avatarQuotes || [], triathlonLog || [], showToast);
 
   // 02 · Open 4-Column Swiss Poster Gallery (auto-derived categories)
   const numbered = projects.map((p, i) => ({ ...p, code: String(i + 1).padStart(2, "0") }));

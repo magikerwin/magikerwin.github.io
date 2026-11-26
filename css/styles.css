@@ -777,13 +777,15 @@ h2 {
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, color 140ms ease;
 }
 .tri-leg svg { color: var(--leg-accent, var(--accent)); flex-shrink: 0; }
-.tri-leg:hover {
+.tri-leg:hover,
+.tri-leg.is-done {
   transform: translateY(-1px);
   border-color: var(--leg-accent, var(--accent));
   background: var(--leg-accent, var(--accent));
   color: #fff;
 }
-.tri-leg:hover svg { color: #fff; }
+.tri-leg:hover svg,
+.tri-leg.is-done svg { color: #fff; }
 
 .stats-inline {
   display: flex;
@@ -1022,6 +1024,215 @@ footer {
   color: var(--muted);
 }
 
+/* Unlockable Obsidian Triathlon Race Log Modal */
+.tri-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 14px;
+  background: rgba(18, 18, 22, 0.62);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.tri-modal[hidden] { display: none; }
+.tri-modal.show { opacity: 1; }
+.tri-sheet {
+  width: 100%;
+  max-width: 660px;
+  max-height: min(86svh, 760px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(165deg, #1b1d24 0%, #14151a 100%);
+  color: #f4f0e6;
+  border-radius: 22px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 64px rgba(10, 10, 14, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translate3d(0, 14px, 0) scale(0.97);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tri-modal.show .tri-sheet { transform: translate3d(0, 0, 0) scale(1); }
+.tri-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.tri-sheet-kicker {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tri-sheet-kicker::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.tri-sheet-title { font-size: 21px; font-weight: 700; letter-spacing: -0.025em; margin-top: 3px; color: #fff; }
+.tri-sheet-close {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4f0e6;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease;
+}
+.tri-sheet-close:hover { background: rgba(255, 255, 255, 0.16); }
+
+.tri-pb-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 13px;
+  flex-shrink: 0;
+}
+.tri-pb-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 9px 11px;
+}
+.tri-pb-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 240, 230, 0.54);
+}
+.tri-pb-val { font-family: var(--mono); font-size: 14.5px; font-weight: 800; color: #fff; margin-top: 2px; }
+.tri-pb-sub {
+  font-size: 10px;
+  color: rgba(244, 240, 230, 0.5);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tri-dist-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.tri-d-tab {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgba(244, 240, 230, 0.72);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+.tri-d-tab:hover { border-color: rgba(255, 255, 255, 0.45); color: #fff; }
+.tri-d-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.tri-race-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 3px;
+  overscroll-behavior: contain;
+}
+.tri-rr {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tri-rr.is-upcoming {
+  border-color: rgba(232, 67, 31, 0.38);
+  background: rgba(232, 67, 31, 0.08);
+}
+.tri-rr-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tri-rr-name { font-size: 13.5px; font-weight: 700; color: #fff; line-height: 1.3; }
+.tri-rr-time { font-family: var(--mono); font-size: 13.5px; font-weight: 800; color: #ff8a6b; white-space: nowrap; }
+.tri-rr-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(244, 240, 230, 0.85);
+  white-space: nowrap;
+}
+.tri-rr-badge.is-upcoming { background: var(--accent); color: #fff; }
+.tri-rr-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(244, 240, 230, 0.62);
+}
+.tri-rr-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; }
+.tri-dist-pill {
+  padding: 1.5px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  color: #fff;
+  font-weight: 700;
+}
+.tri-rr-links { display: inline-flex; align-items: center; gap: 6px; }
+.tri-rr-link {
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transition: background 140ms ease;
+}
+.tri-rr-link:hover { background: var(--accent); }
+.tri-rr-link.is-sec { background: transparent; border: 1px solid rgba(255, 255, 255, 0.18); color: rgba(244, 240, 230, 0.78); }
+.tri-rr-link.is-sec:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.08); }
+.tri-rr-splits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 11px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(244, 240, 230, 0.82);
+}
+.tri-sp-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+.tri-sp-t { color: rgba(244, 240, 230, 0.48); }
+
 /* Copy Email Toast */
 .toast {
   position: fixed;
@@ -1101,6 +1312,8 @@ footer {
   .poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
   .poster-meta { font-size: 9.5px; gap: 6px; letter-spacing: 0.04em; }
   .cert-mini-grid { grid-template-columns: 1fr; }
+  .tri-sheet { padding: 16px; border-radius: 18px; }
+  .tri-pb-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-runway { height: auto; }
