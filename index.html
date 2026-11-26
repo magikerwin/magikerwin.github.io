@@ -27,12 +27,19 @@
     <div id="hero-runway" class="hero-runway">
       <header id="top" class="exhibition-hero">
         <div class="top-bar">
-          <a href="#top" class="brand-group" aria-label="Back to top">
-            <span class="porthole-mini">
+          <div class="brand-group">
+            <button id="avatar-trigger" class="porthole-mini" type="button" aria-label="Kerwin's triathlon dev log" aria-expanded="false" aria-controls="avatar-bubble">
               <img data-portrait src="./images/head_shot.png" alt="Kuan-Ying Huang (Kerwin)" />
-            </span>
-            <span id="brand-name" class="brand">KERWIN</span>
-          </a>
+            </button>
+            <a href="#top" id="brand-name" class="brand" aria-label="Back to top">KERWIN</a>
+            <div id="avatar-bubble" class="avatar-bubble" role="status" aria-live="polite" hidden>
+              <div class="ab-head">
+                <span id="ab-tag" class="ab-tag"></span>
+                <span id="ab-step" class="ab-step"></span>
+              </div>
+              <p id="ab-text" class="ab-text"></p>
+            </div>
+          </div>
 
           <nav class="top-nav" aria-label="Primary">
             <a class="nav-secondary" href="#helix">Journey</a>

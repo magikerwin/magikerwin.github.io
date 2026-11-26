@@ -424,3 +424,33 @@ export function renderTileArt(tile) {
 
   return `<svg viewBox="0 0 120 120" width="100%" height="100%" aria-hidden="true">${inner}</svg>`;
 }
+
+const MICRO_GLYPHS = {
+  curve: (c) => `<path d="M5 17 C9 7, 14 17, 19 7" fill="none" stroke="${c.fg}" stroke-width="2.3" stroke-linecap="round"/><circle cx="19" cy="7" r="2.2" fill="${c.accent}"/>`,
+  matrix: (c) => `<path d="M5 15 C6 8, 11 8, 10 13 C9 16, 12 16, 12 16" fill="none" stroke="${c.fg}" stroke-width="2" stroke-linecap="round"/><rect x="14" y="6" width="6" height="3" rx="1.5" fill="${c.accent}"/><rect x="14" y="11" width="4.5" height="3" rx="1.5" fill="${c.fg}" opacity="0.7"/><rect x="14" y="16" width="3" height="2.6" rx="1.3" fill="${c.fg}" opacity="0.35"/>`,
+  camera: (c) => `<polygon points="8,7 8,17 16,12" fill="${c.fg}"/><path d="M18 8 A5 5 0 0 1 18 16" fill="none" stroke="${c.accent}" stroke-width="2" stroke-linecap="round"/>`,
+  map: (c) => `<path d="M12 19 C12 19, 6.5 13.8, 6.5 10 A5.5 5.5 0 1 1 17.5 10 C17.5 13.8, 12 19, 12 19 Z" fill="${c.fg}"/><circle cx="12" cy="10" r="2.1" fill="${c.accent}"/>`,
+  helmet: (c) => `<path d="M6 15 A6 6 0 0 1 18 15 Z" fill="${c.accent}"/><rect x="4.5" y="15" width="15" height="2.6" rx="1.3" fill="${c.fg}"/>`,
+  face: (c) => `<ellipse cx="12" cy="12" rx="5.5" ry="6.5" fill="none" stroke="${c.accent}" stroke-width="1.8"/><line x1="5" y1="12" x2="19" y2="12" stroke="${c.fg}" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="10" r="1.1" fill="${c.fg}"/><circle cx="14" cy="10" r="1.1" fill="${c.fg}"/>`,
+  pedestrian: (c) => `<circle cx="12" cy="6.2" r="2.1" fill="${c.fg}"/><path d="M12 9 L11.5 14 M8 11 L12 10 L16 11.5 M11.5 14 L8.5 19 M11.5 14 L15 19" fill="none" stroke="${c.fg}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`,
+  vehicle: (c) => `<path d="M6 12 L8 8 L16 8 L18 12 Z" fill="none" stroke="${c.fg}" stroke-width="1.7" stroke-linejoin="round"/><rect x="4.5" y="12" width="15" height="5" rx="2" fill="${c.fg}"/><circle cx="7.5" cy="14.5" r="1.2" fill="${c.accent}"/><circle cx="16.5" cy="14.5" r="1.2" fill="${c.accent}"/>`,
+  robot: (c) => `<path d="M5 18 L10 8 L17 11" fill="none" stroke="${c.fg}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="18" r="2.2" fill="${c.accent}"/><circle cx="17" cy="11" r="2" fill="${c.fg}"/>`,
+  graph: (c) => `<path d="M5 17 L11 11 L19 6 M11 11 L18 17" fill="none" stroke="${c.accent}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="2.2" fill="${c.fg}"/>`,
+  nodes: (c) => `<path d="M6 7 L12 12 L18 12 M6 17 L12 12" stroke="${c.fg}" stroke-opacity="0.55" stroke-width="1.6"/><circle cx="6" cy="7" r="2" fill="${c.fg}"/><circle cx="6" cy="17" r="2" fill="${c.fg}"/><circle cx="18" cy="12" r="2.8" fill="${c.accent}"/>`,
+  blocks: (c) => `<rect x="6" y="6" width="12" height="3.4" rx="1.7" fill="${c.accent}"/><rect x="6" y="10.8" width="9.5" height="3.4" rx="1.7" fill="${c.fg}"/><rect x="6" y="15.6" width="7" height="3" rx="1.5" fill="${c.fg}" opacity="0.45"/>`,
+  trio: () => `<circle cx="12" cy="8" r="3.2" fill="#389826"/><circle cx="8" cy="15.2" r="3.2" fill="#CB3C33"/><circle cx="16" cy="15.2" r="3.2" fill="#9558B2"/>`,
+  bars: (c) => `<rect x="5" y="7" width="9" height="2.6" rx="1.3" fill="${c.fg}" opacity="0.8"/><rect x="5" y="11" width="14" height="3" rx="1.5" fill="${c.accent}"/><rect x="5" y="15.4" width="11" height="2.6" rx="1.3" fill="${c.fg}" opacity="0.6"/>`,
+};
+
+/**
+ * Compact 24x24 vector glyph for DNA spine micro-tokens & Journey card icon chips.
+ */
+export function renderMicroGlyph(tile, size = 15) {
+  const colors = resolveTileStyle(tile);
+  const presetKey = tile.preset && MICRO_GLYPHS[tile.preset] ? tile.preset : inferPreset(tile);
+  const inner = presetKey && MICRO_GLYPHS[presetKey]
+    ? MICRO_GLYPHS[presetKey](colors)
+    : `<circle cx="12" cy="12" r="5" fill="${colors.accent}"/><circle cx="12" cy="12" r="2" fill="${colors.fg}"/>`;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">${inner}</svg>`;
+}
+
