@@ -141,6 +141,26 @@ export function initRing3D(tiles) {
     });
   }
 
+  if (dnaWrap && ttEl) {
+    dnaWrap.addEventListener("mousemove", (e) => {
+      const tok = e.target.closest(".spine-micro-tok");
+      if (!tok) {
+        if (!e.target.closest(".dna-bead")) ttEl.classList.remove("show");
+        return;
+      }
+      const idx = Number(tok.dataset.proj);
+      const p = tiles[idx];
+      if (!p) return;
+      ttSwatch.style.background = tileStyles[idx].bg;
+      ttText.textContent = `${String(idx + 1).padStart(2, "0")} · ${p.label || p.title} — ${p.stack || p.category} ↗`;
+      ttEl.style.left = `${e.clientX}px`;
+      ttEl.style.top = `${e.clientY - 12}px`;
+      ttEl.classList.add("show");
+    });
+    dnaWrap.addEventListener("mouseleave", () => ttEl.classList.remove("show"));
+    window.addEventListener("scroll", () => ttEl.classList.remove("show"), { passive: true });
+  }
+
   document.querySelectorAll(".helix-pair[data-era-indices]").forEach((row) => {
     const idxs = row.dataset.eraIndices.split(",").filter(Boolean).map(Number).filter((i) => i >= 0 && i < N);
     row.addEventListener("mouseenter", () => { activeEraSet = new Set(idxs); });
@@ -466,7 +486,7 @@ export function initRing3D(tiles) {
 
       let beads = "";
       const spineLen = flowPtsA.length - 1 - splitIdx;
-      if (spineLen > 12) {
+      if (isPhone && spineLen > 12) {
         const padTop = Math.floor(spineLen * (isPhone ? 0.05 : 0.1));
         const padBot = Math.floor(spineLen * 0.07);
         const usable = Math.max(spineLen - padTop - padBot, 10);

@@ -1,4 +1,4 @@
-import { renderTileArt, resolveTileStyle } from "./tile-art.js";
+import { isLightTheme, renderMicroGlyph, renderTileArt, resolveTileStyle } from "./tile-art.js";
 
 function renderFoundationCard(f, stats) {
   const variantClass = f.variant ? ` ${f.variant}` : "";
@@ -118,8 +118,23 @@ export function initUI(data) {
           .filter((idx) => idx >= 0);
         const filterCount = projects.filter((p) => p.category === c.filterCategory).length;
 
-        const swatchesHtml = swatchIndices
-          .map((i) => `<span class="era-dot" style="background:${projectStyles[i].bg};" title="${projects[i].label || projects[i].title}"></span>`)
+        const chipsHtml = swatchIndices
+          .map((i) => {
+            const p = projects[i];
+            const st = projectStyles[i];
+            const lightCls = isLightTheme(p) ? " light-chip" : "";
+            return `<a class="era-glyph-chip${lightCls}" href="${p.url}" target="_blank" rel="noreferrer" title="${p.title}" style="background:${st.bg};color:${st.fg};">${renderMicroGlyph(p, 14)}<span>${p.label || p.title}</span></a>`;
+          })
+          .join("");
+
+        const spineTokensHtml = eraIndices
+          .map((i, k) => {
+            const p = projects[i];
+            const st = projectStyles[i];
+            const lightCls = isLightTheme(p) ? " is-light" : "";
+            const sideCls = k % 2 === 0 ? " tok-l" : " tok-r";
+            return `<a class="spine-micro-tok${lightCls}${sideCls}" data-proj="${i}" href="${p.url}" target="_blank" rel="noreferrer" aria-label="${p.title}" style="background:${st.bg};color:${st.fg};">${renderMicroGlyph(p, 15)}</a>`;
+          })
           .join("");
 
         return `
@@ -135,14 +150,17 @@ export function initUI(data) {
                 <p class="dna-desc">${c.desc}</p>
               </div>
               <div class="dna-foot">
-                <span class="era-swatches">${swatchesHtml}</span>
+                <span class="era-glyph-row">${chipsHtml}</span>
                 <div class="dna-actions">
                   <button class="dna-chip" type="button" data-filter-cat="${c.filterCategory}">${filterCount} ${c.chipLabel} ↓</button>
                 </div>
               </div>
             </article>
 
-            <div class="helix-center-pin"><span class="pair-tag">${row.pin}</span></div>
+            <div class="helix-center-pin">
+              <span class="pair-tag">${row.pin}</span>
+              <div class="spine-tok-stack">${spineTokensHtml}</div>
+            </div>
 
             ${renderFoundationCard(row.foundation, stats)}
           </div>`;
@@ -237,15 +255,20 @@ export function initUI(data) {
   // 03 · Tabbed Verified Certifications (tab labels read directly from SITE_DATA.certifications)
   const cTabsEl = document.getElementById("cert-tabs");
   const cGridEl = document.getElementById("cert-mini-grid");
+  const certTrackColors = ["#E8431F", "#1943B8", "#0F5B42", "#7C1212"];
   const tabGroups = [
-    ...certifications.map((g) => ({
+    ...certifications.map((g, idx) => ({
       label: `${g.tab} (${g.items.length})`,
+      dot: certTrackColors[idx % certTrackColors.length],
       items: g.items,
     })),
-    { label: `All (${totalCerts})`, items: certifications.flatMap((g) => g.items) },
+    { label: `All (${totalCerts})`, dot: null, items: certifications.flatMap((g) => g.items) },
   ];
   cTabsEl.innerHTML = tabGroups
-    .map((t, i) => `<button class="c-tab ${i === 0 ? "active" : ""}" data-i="${i}" type="button">${t.label}</button>`)
+    .map(
+      (t, i) =>
+        `<button class="c-tab ${i === 0 ? "active" : ""}" data-i="${i}" type="button">${t.dot ? `<span class="c-tab-dot" style="background:${t.dot};"></span>` : ""}${t.label}</button>`
+    )
     .join("");
 
   function renderCerts() {
