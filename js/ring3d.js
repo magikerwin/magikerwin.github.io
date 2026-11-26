@@ -34,14 +34,11 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   unifiedSvg.textContent = "";
 
   const orbitGroup = makeSvg("g");
-  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.6", "stroke-linecap": "round" });
-  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.6", "stroke-linecap": "round" });
-  const tetherPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.5", "stroke-linecap": "round" });
-  const tetherPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.5", "stroke-linecap": "round" });
+  const orbitPathB = makeSvg("path", { fill: "none", stroke: "#E8431F", "stroke-width": "1.75", "stroke-linecap": "round" });
+  const orbitPathA = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.75", "stroke-linecap": "round" });
   const orbitPulseA = makeSvg("circle", { r: "3.1", fill: "#14151A" });
   const orbitPulseB = makeSvg("circle", { r: "3.1", fill: "#E8431F" });
-  const tetherPulse = makeSvg("circle", { r: "2.8", fill: "#E8431F" });
-  orbitGroup.append(tetherPathB, tetherPathA, orbitPathB, orbitPathA, orbitPulseA, orbitPulseB, tetherPulse);
+  orbitGroup.append(orbitPathB, orbitPathA, orbitPulseA, orbitPulseB);
 
   const heroRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "2", "stroke-linecap": "round" });
   const funnelRungsPath = makeSvg("path", { fill: "none", stroke: "#14151A", "stroke-width": "1.2" });
@@ -94,7 +91,7 @@ function createSvgScene(unifiedSvg, pairCount, tileStyles, tileIsLight) {
   );
 
   return {
-    orbitGroup, orbitPathA, orbitPathB, tetherPathA, tetherPathB, orbitPulseA, orbitPulseB, tetherPulse,
+    orbitGroup, orbitPathA, orbitPathB, orbitPulseA, orbitPulseB,
     heroRungsPath, funnelRungsPath, spineRungsPath,
     funnelPathB, funnelPathA, spinePathB, spinePathA,
     heroPathB, heroPathA, heroMidGroup, heroMidDots,
@@ -323,8 +320,8 @@ export function initRing3D(tiles) {
   }
 
   /**
-   * Projects the tilted braided twin-strand orbital ring framing the 3D tiles at e=0
-   * and connects its front-bottom rim directly into the DNA origin node (spineCx, helixTopY).
+   * Projects two continuous C1-tangent ribbons that wrap the 3D Ring and peel smoothly
+   * off the left (Obsidian) and right (Signal Orange) flanks straight into the DNA origin node.
    */
   function renderOrbitBridge(stageCx, stageCy, spineCx, helixTopY, hw, isPhone, e) {
     const orbitOp = Math.max(0, 1 - e * 2.25);
@@ -341,13 +338,14 @@ export function initRing3D(tiles) {
     }
 
     const shrink = lerp(1, 0.72, Math.min(e * 2, 1));
-    const baseR = Math.min(radius * (isPhone ? 1.2 : 1.24), hw * (isPhone ? 0.45 : 0.43)) * shrink;
+    const baseR = Math.min(radius * (isPhone ? 1.14 : 1.24), hw * (isPhone ? 0.44 : 0.42)) * shrink;
     const phase = angle * DEG * 1.4;
-    const SEG = 36;
-    const waveY = isPhone ? 6.5 : 9;
+    const ARC_SEG = 28;
+    const TAIL_SEG = 10;
+    const waveY = isPhone ? 5.5 : 8;
 
     const projectOrbit = (th, sign) => {
-      const r = baseR * (1 + sign * 0.028 * Math.cos(3 * th + phase));
+      const r = baseR * (1 + sign * 0.025 * Math.cos(3 * th + phase));
       const x0 = r * Math.sin(th);
       const z0 = r * Math.cos(th);
       const y0 = sign * Math.sin(3 * th + phase) * waveY;
@@ -359,69 +357,61 @@ export function initRing3D(tiles) {
       return { x: stageCx + x1 * pf, y: stageCy + y2 * pf };
     };
 
-    const ptsA = [];
-    const ptsB = [];
-    for (let k = 0; k <= SEG; k++) {
-      const th = (k / SEG) * Math.PI * 2;
-      ptsA.push(projectOrbit(th, 1));
-      ptsB.push(projectOrbit(th, -1));
-    }
+    // Build ONE continuous unbroken path per strand:
+    //   Obsidian (side=-1): sweeps front -> right -> back -> peels vertically off LEFT outer flank (-90°) -> curves wide-left into origin
+    //   Orange   (side=+1): sweeps front -> left -> back -> peels vertically off RIGHT outer flank (+90°) -> curves wide-right into origin
+    const buildUnwindRibbon = (side) => {
+      const pts = [];
+      const startDeg = side < 0 ? 55 : -55;
+      const peelDeg = side < 0 ? 270 : -270; // 270° = -90° (left flank), -270° = +90° (right flank), both moving straight DOWN!
+      for (let k = 0; k <= ARC_SEG; k++) {
+        const th = lerp(startDeg, peelDeg, k / ARC_SEG) * DEG;
+        pts.push(projectOrbit(th, -side));
+      }
+      const p0 = pts[pts.length - 1];
+      const dy = Math.max(80, helixTopY - p0.y);
+      const flankOut = isPhone ? (side < 0 ? 4 : 10) : 26;
+      const c1x = p0.x + side * flankOut;
+      const c1y = p0.y + dy * 0.44;
+      const c2x = spineCx + side * (isPhone ? (side < 0 ? 10 : 34) : 56);
+      const c2y = helixTopY - dy * 0.24;
 
-    const opRing = (0.58 * orbitOp).toFixed(2);
-    const opRingB = (0.64 * orbitOp).toFixed(2);
-    svgScene.orbitPathA.setAttribute("d", `${smoothBezierSlice(ptsA, 0, SEG)} Z`);
-    svgScene.orbitPathA.setAttribute("stroke-opacity", opRing);
-    svgScene.orbitPathB.setAttribute("d", `${smoothBezierSlice(ptsB, 0, SEG)} Z`);
-    svgScene.orbitPathB.setAttribute("stroke-opacity", opRingB);
+      for (let k = 1; k <= TAIL_SEG; k++) {
+        const t = k / TAIL_SEG;
+        const mt = 1 - t;
+        pts.push({
+          x: mt * mt * mt * p0.x + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * spineCx,
+          y: mt * mt * mt * p0.y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * helixTopY,
+        });
+      }
+      return pts;
+    };
 
-    // Smooth hourglass tether from front-bottom rim of orbital ring straight into DNA origin dot
-    const leftRim = projectOrbit(-22 * DEG, 1);
-    const rightRim = projectOrbit(22 * DEG, -1);
-    const dy = Math.max(48, helixTopY - (leftRim.y + rightRim.y) * 0.5);
+    const ptsA = buildUnwindRibbon(-1);
+    const ptsB = buildUnwindRibbon(1);
 
-    const c1Ax = leftRim.x + (spineCx - leftRim.x) * 0.14;
-    const c1Ay = leftRim.y + dy * 0.46;
-    const c2Ax = spineCx - (isPhone ? 8 : 16);
-    const c2Ay = helixTopY - dy * 0.34;
+    svgScene.orbitPathA.setAttribute("d", smoothBezierSlice(ptsA, 0, ptsA.length - 1));
+    svgScene.orbitPathA.setAttribute("stroke-opacity", (0.58 * orbitOp).toFixed(2));
+    svgScene.orbitPathB.setAttribute("d", smoothBezierSlice(ptsB, 0, ptsB.length - 1));
+    svgScene.orbitPathB.setAttribute("stroke-opacity", (0.66 * orbitOp).toFixed(2));
 
-    const c1Bx = rightRim.x + (spineCx - rightRim.x) * 0.14;
-    const c1By = rightRim.y + dy * 0.46;
-    const c2Bx = spineCx + (isPhone ? 8 : 16);
-    const c2By = helixTopY - dy * 0.34;
-
-    const tetherOpA = (0.48 * orbitOp).toFixed(2);
-    const tetherOpB = (0.56 * orbitOp).toFixed(2);
-    svgScene.tetherPathA.setAttribute("d", `M${leftRim.x.toFixed(1)},${leftRim.y.toFixed(1)} C${c1Ax.toFixed(1)},${c1Ay.toFixed(1)} ${c2Ax.toFixed(1)},${c2Ay.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`);
-    svgScene.tetherPathA.setAttribute("stroke-opacity", tetherOpA);
-    svgScene.tetherPathB.setAttribute("d", `M${rightRim.x.toFixed(1)},${rightRim.y.toFixed(1)} C${c1Bx.toFixed(1)},${c1By.toFixed(1)} ${c2Bx.toFixed(1)},${c2By.toFixed(1)} ${spineCx.toFixed(1)},${helixTopY.toFixed(1)}`);
-    svgScene.tetherPathB.setAttribute("stroke-opacity", tetherOpB);
-
-    // Living orbital & downward tether pulses (hidden when reduced-motion is preferred)
     if (!reducedMotion) {
-      const pA = projectOrbit(pulseClock * Math.PI * 2, 1);
-      const pB = projectOrbit(((pulseClock + 0.5) % 1) * Math.PI * 2, -1);
-      const pulseOp = (0.85 * orbitOp).toFixed(2);
+      const idxA = Math.min(ptsA.length - 1, Math.floor(pulseClock * (ptsA.length - 1)));
+      const idxB = Math.min(ptsB.length - 1, Math.floor(((pulseClock + 0.5) % 1) * (ptsB.length - 1)));
+      const pA = ptsA[idxA];
+      const pB = ptsB[idxB];
+      const pulseOp = (0.86 * orbitOp).toFixed(2);
       svgScene.orbitPulseA.removeAttribute("display");
       svgScene.orbitPulseB.removeAttribute("display");
-      svgScene.tetherPulse.removeAttribute("display");
       svgScene.orbitPulseA.setAttribute("cx", pA.x.toFixed(1));
       svgScene.orbitPulseA.setAttribute("cy", pA.y.toFixed(1));
       svgScene.orbitPulseA.setAttribute("fill-opacity", pulseOp);
       svgScene.orbitPulseB.setAttribute("cx", pB.x.toFixed(1));
       svgScene.orbitPulseB.setAttribute("cy", pB.y.toFixed(1));
       svgScene.orbitPulseB.setAttribute("fill-opacity", pulseOp);
-
-      const t = pulseClock;
-      const mt = 1 - t;
-      const tx = mt * mt * mt * rightRim.x + 3 * mt * mt * t * c1Bx + 3 * mt * t * t * c2Bx + t * t * t * spineCx;
-      const ty = mt * mt * mt * rightRim.y + 3 * mt * mt * t * c1By + 3 * mt * t * t * c2By + t * t * t * helixTopY;
-      svgScene.tetherPulse.setAttribute("cx", tx.toFixed(1));
-      svgScene.tetherPulse.setAttribute("cy", ty.toFixed(1));
-      svgScene.tetherPulse.setAttribute("fill-opacity", (0.88 * orbitOp).toFixed(2));
     } else {
       svgScene.orbitPulseA.setAttribute("display", "none");
       svgScene.orbitPulseB.setAttribute("display", "none");
-      svgScene.tetherPulse.setAttribute("display", "none");
     }
   }
 
