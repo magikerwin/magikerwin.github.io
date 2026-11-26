@@ -1,5 +1,28 @@
 import { isLightTheme, renderMicroGlyph, renderTileArt, resolveTileStyle } from "./tile-art.js";
 
+const TRI_META = {
+  swim: {
+    label: "Swim",
+    color: "#0B7A75",
+    icon: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 15c2-1.8 4-1.8 6 0s4 1.8 6 0 4-1.8 6 0"/><path d="M2 20c2-1.8 4-1.8 6 0s4 1.8 6 0 4-1.8 6 0"/><circle cx="16.5" cy="7.5" r="2.2" fill="currentColor" stroke="none"/><path d="M6.5 12l4-3.5 3.5 2"/></svg>`,
+  },
+  bike: {
+    label: "Bike",
+    color: "#E8431F",
+    icon: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4.5-7.5h4.5l3 7.5M10.5 9.5L13 17H6M14 6.5h3"/></svg>`,
+  },
+  run: {
+    label: "Run",
+    color: "#D99B00",
+    icon: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="15" cy="5.5" r="2.2" fill="currentColor" stroke="none"/><path d="M13 9.5l-2.5 5 4.5 2.5-1.5 4.5M10.5 14.5L6 16.5M9 10.5l4-1 3.5 2.5"/></svg>`,
+  },
+  transition: {
+    label: "T1 → T2",
+    color: "#1943B8",
+    icon: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h14l-3.5-3.5M20 15H6l3.5 3.5"/></svg>`,
+  },
+};
+
 function renderFoundationCard(f, stats) {
   const variantClass = f.variant ? ` ${f.variant}` : "";
 
@@ -10,13 +33,23 @@ function renderFoundationCard(f, stats) {
           <div class="dna-kicker"><span>${f.kickerLeft}</span><span>${f.kickerRight}</span></div>
           <div class="focus-list">
             ${f.items
-              .map(
-                (it) => `
+              .map((it) => {
+                const legsHtml = it.triLegs?.length
+                  ? `<div class="tri-legs">${it.triLegs
+                      .map((leg) => {
+                        const m = TRI_META[leg];
+                        if (!m) return "";
+                        return `<button class="tri-leg" type="button" data-tri-leg="${leg}" style="--leg-accent:${m.color};" title="Tap for ${m.label} log">${m.icon}<span>${m.label}</span></button>`;
+                      })
+                      .join("")}</div>`
+                  : "";
+                return `
                 <div class="focus-row">
                   <div class="spec-label">${it.label}</div>
                   <div class="focus-val">${it.value}</div>
-                </div>`
-              )
+                  ${legsHtml}
+                </div>`;
+              })
               .join("")}
           </div>
         </div>
@@ -179,6 +212,99 @@ export function initUI(data) {
   document.getElementById("copy-email")?.addEventListener("click", () => {
     navigator.clipboard?.writeText(profile.email).catch(() => {});
     showToast(`Copied ${profile.email}`);
+  });
+
+  // Playful Triathlon Avatar Easter Egg (hover on desktop, tap to cycle, auto-dismiss on scroll/outside)
+  const avatarBtn = document.getElementById("avatar-trigger");
+  const avatarBubble = document.getElementById("avatar-bubble");
+  const abTag = document.getElementById("ab-tag");
+  const abStep = document.getElementById("ab-step");
+  const abText = document.getElementById("ab-text");
+  const quotes = profile.avatarQuotes || [];
+
+  if (avatarBtn && avatarBubble && quotes.length) {
+    let qIdx = -1;
+    let isOpen = false;
+    let pinned = false;
+    let closeTimer = null;
+    const canHover = window.matchMedia("(hover: hover)").matches;
+
+    const renderQuote = (idx) => {
+      const q = quotes[idx];
+      const meta = TRI_META[q.leg] || TRI_META.transition;
+      const accent = q.color || meta.color;
+      avatarBtn.style.setProperty("--tri-accent", accent);
+      avatarBubble.style.setProperty("--tri-accent", accent);
+      abTag.innerHTML = `${meta.icon}<span>${q.tag}</span>`;
+      abStep.textContent = `${idx + 1}/${quotes.length} · TAP`;
+      abText.textContent = q.text;
+    };
+
+    const openBubble = (advance = true) => {
+      clearTimeout(closeTimer);
+      if (advance || qIdx < 0) qIdx = (qIdx + 1) % quotes.length;
+      renderQuote(qIdx);
+      avatarBubble.hidden = false;
+      requestAnimationFrame(() => avatarBubble.classList.add("show"));
+      avatarBtn.classList.add("is-active");
+      avatarBtn.setAttribute("aria-expanded", "true");
+      isOpen = true;
+    };
+
+    const closeBubble = () => {
+      clearTimeout(closeTimer);
+      if (!isOpen) return;
+      isOpen = false;
+      pinned = false;
+      avatarBubble.classList.remove("show");
+      avatarBtn.classList.remove("is-active");
+      avatarBtn.setAttribute("aria-expanded", "false");
+      closeTimer = setTimeout(() => {
+        if (!isOpen) avatarBubble.hidden = true;
+      }, 180);
+    };
+
+    if (canHover) {
+      avatarBtn.addEventListener("mouseenter", () => {
+        if (!isOpen) openBubble(true);
+      });
+      avatarBtn.addEventListener("mouseleave", () => {
+        if (!pinned) closeTimer = setTimeout(closeBubble, 220);
+      });
+      avatarBubble.addEventListener("mouseenter", () => clearTimeout(closeTimer));
+      avatarBubble.addEventListener("mouseleave", () => {
+        if (!pinned) closeTimer = setTimeout(closeBubble, 180);
+      });
+    }
+
+    avatarBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      pinned = true;
+      openBubble(true);
+    });
+    avatarBubble.addEventListener("click", (e) => {
+      e.stopPropagation();
+      pinned = true;
+      openBubble(true);
+    });
+    document.addEventListener("click", (e) => {
+      if (isOpen && !e.target.closest(".brand-group")) closeBubble();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isOpen) closeBubble();
+    });
+    window.addEventListener("scroll", () => {
+      if (isOpen && window.scrollY > 40) closeBubble();
+    }, { passive: true });
+  }
+
+  // Interactive Swim / Bike / Run chips in Highlights card
+  document.querySelectorAll(".tri-leg[data-tri-leg]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const leg = btn.dataset.triLeg;
+      const q = quotes.find((item) => item.leg === leg);
+      if (q) showToast(`${q.tag} · ${q.text}`, 3400);
+    });
   });
 
   // 02 · Open 4-Column Swiss Poster Gallery (auto-derived categories)

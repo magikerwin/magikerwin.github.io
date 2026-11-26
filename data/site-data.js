@@ -38,6 +38,32 @@ export const SITE_DATA = {
     yearsExp: "8+ yrs",
     bioHtml:
       'Turning <strong>research</strong> into reliable software by day—training for <strong>triathlons</strong> by night.',
+    avatarQuotes: [
+      {
+        leg: "swim",
+        tag: "SWIM",
+        color: "#0B7A75",
+        text: "Open-water sighting: swallowed lake water. Fatal: unhandled input stream.",
+      },
+      {
+        leg: "bike",
+        tag: "BIKE",
+        color: "#E8431F",
+        text: "Max wattage on climbs. CPU throttling, legs overfitting.",
+      },
+      {
+        leg: "run",
+        tag: "RUN",
+        color: "#D99B00",
+        text: "Final kilometers: battery 10%. Executing banana_gel.sh to avoid meltdown.",
+      },
+      {
+        leg: "transition",
+        tag: "T1 → T2",
+        color: "#1943B8",
+        text: "Transition zone: hot-swapping hardware under race-day latency.",
+      },
+    ],
     links: {
       github: "https://github.com/magikerwin",
       linkedin: "https://www.linkedin.com/in/kuan-ying-huang-1993-magiclover/",
@@ -71,7 +97,11 @@ export const SITE_DATA = {
         items: [
           { label: "Focus", value: "End-to-end ML pipelines from prototype to scale" },
           { label: "Side Lab", value: "Rust + Burn neural nets compiled to WebAssembly" },
-          { label: "Endurance", value: "51.5K standard-distance triathlete" },
+          {
+            label: "Endurance",
+            value: "Multi-distance triathlete",
+            triLegs: ["swim", "bike", "run"],
+          },
         ],
       },
     },
