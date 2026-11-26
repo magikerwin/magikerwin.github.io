@@ -234,6 +234,7 @@ h1 {
   pointer-events: auto;
   will-change: transform;
 }
+.ring-tile.is-active { z-index: 40; }
 .tile-face {
   position: absolute;
   inset: 0;
@@ -244,14 +245,46 @@ h1 {
   box-shadow: 0 18px 36px rgba(18, 18, 20, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: box-shadow 180ms ease;
 }
+.tile-face > svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.tile-face.front { transform: translateZ(1px); }
 .tile-face.back {
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
   filter: brightness(0.95);
   box-shadow: 0 12px 26px rgba(18, 18, 20, 0.1);
 }
 .ring-tile:hover .tile-face.front {
   box-shadow: 0 24px 48px rgba(18, 18, 20, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
+.ring-tile.is-active .tile-face.front {
+  box-shadow: 0 0 0 2.5px var(--accent), 0 0 0 7px rgba(232, 67, 31, 0.2), 0 26px 52px rgba(20, 21, 26, 0.3);
+}
+.focus-pip {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 10;
+  padding: 2px 6.5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  box-shadow: 0 3px 10px rgba(20, 21, 26, 0.32);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+.ring-tile.is-active .focus-pip { opacity: 1; }
 
 .hero-bottom {
   display: flex;
@@ -260,6 +293,7 @@ h1 {
   text-align: center;
   z-index: 25;
   position: relative;
+  width: 100%;
   will-change: opacity, transform;
 }
 
@@ -279,17 +313,47 @@ h1 {
 
 .ring-caption {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 6px 8px 6px 14px;
+  padding: 6px 8px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(14px);
   border: 1px solid var(--hairline);
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(18, 18, 20, 0.06);
   max-width: 100%;
+}
+.ring-caption-body {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+.plaque-step {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-hi);
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.plaque-step:hover {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
 }
 .ring-tag {
   font-family: var(--mono);
@@ -308,6 +372,7 @@ h1 {
   text-decoration: none;
   font-size: 11.5px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .ring-link:hover { background: #2c2c32; }
 
@@ -819,7 +884,18 @@ footer {
   .hero-bio { font-size: 13px; margin-top: 5px; }
   .sculpture-origin { width: 106px; height: 106px; }
   .stage-3d { min-height: 250px; perspective: 950px; }
-  .ring-caption { border-radius: 16px; padding: 8px 12px; gap: 6px 10px; }
+  .ring-caption {
+    display: grid;
+    grid-template-columns: 30px 1fr 30px;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 356px;
+    border-radius: 18px;
+    padding: 9px 10px;
+  }
+  .ring-caption-body { flex-direction: column; gap: 4px; }
+  .ring-title { font-size: 12.5px; line-height: 1.3; }
   .shell { padding: 0 16px; }
   .helix-spine { left: 4px; width: 26px; transform: none; }
   .dna-head { grid-template-columns: 1fr; padding-left: 50px; gap: 10px; }

@@ -20,6 +20,8 @@ export function initRing3D(tiles) {
   const tagEl = document.getElementById("ring-tag");
   const titleEl = document.getElementById("ring-title");
   const linkEl = document.getElementById("ring-link");
+  const prevBtn = document.getElementById("ring-prev");
+  const nextBtn = document.getElementById("ring-next");
   const dnaWrap = document.getElementById("helix");
   const ttEl = document.getElementById("dna-tooltip");
   const ttSwatch = document.getElementById("dna-tt-swatch");
@@ -45,9 +47,10 @@ export function initRing3D(tiles) {
     .map((t, i) => {
       const { bg, fg } = tileStyles[i];
       const artHtml = renderTileArt(t);
+      const pip = String(i + 1).padStart(2, "0");
       return `
         <div class="ring-tile" data-idx="${i}" role="button" tabindex="0" aria-label="${t.title}">
-          <div class="tile-face front" style="background:${bg}; color:${fg};">${artHtml}</div>
+          <div class="tile-face front" style="background:${bg}; color:${fg};">${artHtml}<span class="focus-pip">${pip}</span></div>
           <div class="tile-face back" style="background:${bg}; color:${fg};">${artHtml}</div>
         </div>`;
     })
@@ -69,6 +72,7 @@ export function initRing3D(tiles) {
   let morph = 0;
   let activeEraSet = new Set();
   let pulseClock = 0;
+  let autoPauseUntil = 0;
 
   function measure() {
     const tileW = origin.getBoundingClientRect().width || (window.innerWidth <= 680 ? 106 : 146);
@@ -87,7 +91,12 @@ export function initRing3D(tiles) {
     return t * t * t * (t * (t * 6 - 15) + 10);
   }
   function shortestDelta(fromDeg, toDeg) { return ((toDeg - fromDeg + 540) % 360) - 180; }
-  function snapToIndex(idx) { targetAngle = angle + shortestDelta(angle, -idx * STEP); vel = 0; }
+  function snapToIndex(idx) {
+    const target = ((idx % N) + N) % N;
+    targetAngle = angle + shortestDelta(angle, -target * STEP);
+    vel = 0;
+    autoPauseUntil = performance.now() + 3600;
+  }
 
   function updateCaption(idx) {
     if (idx === activeShown || !tiles[idx]) return;
@@ -146,6 +155,7 @@ export function initRing3D(tiles) {
       return;
     }
 
+    const now = performance.now();
     if (!dragging) {
       if (targetAngle !== null) {
         const diff = targetAngle - angle;
@@ -154,7 +164,7 @@ export function initRing3D(tiles) {
       } else if (Math.abs(vel) > 0.06) {
         angle += vel;
         vel *= 0.94;
-      } else if (!stageHovered && !reducedMotion) {
+      } else if (!stageHovered && !reducedMotion && now > autoPauseUntil) {
         angle -= 0.1;
       }
     }
@@ -208,6 +218,11 @@ export function initRing3D(tiles) {
     );
     const dnaYShift = e * ((heroTopWorld + hh * (isPhone ? 0.40 : 0.41)) - stageCy);
 
+    const norm = ((-angle % 360) + 360) % 360;
+    const ringFrontIdx = Math.round(norm / STEP) % N;
+    const ringActiveIdx = hoveredTile >= 0 ? hoveredTile : ringFrontIdx;
+    const spotlightStrength = Math.max(0, 1 - e * 2.2);
+
     const strandA = [];
     const strandB = [];
     let frontMostIdx = 0;
@@ -251,7 +266,12 @@ export function initRing3D(tiles) {
       const ry = lerp(ryRing, ryDna, e);
       const sc = lerp(1, dnaScale, e);
 
-      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+      const isAct = i === ringActiveIdx && spotlightStrength > 0.05;
+      const zLift = isAct ? 36 * spotlightStrength : 0;
+      const scMult = isAct ? lerp(1, 1.11, spotlightStrength) : 1;
+
+      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${(z + zLift).toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${(sc * scMult).toFixed(3)})`;
+      el.classList.toggle("is-active", isAct);
 
       if (z > maxZ) { maxZ = z; frontMostIdx = i; }
 
@@ -478,8 +498,6 @@ export function initRing3D(tiles) {
       `;
     }
 
-    const norm = ((-angle % 360) + 360) % 360;
-    const ringFrontIdx = Math.round(norm / STEP) % N;
     updateCaption(hoveredTile >= 0 ? hoveredTile : (e > 0.5 ? frontMostIdx : ringFrontIdx));
 
     requestAnimationFrame(tick);
@@ -493,7 +511,10 @@ export function initRing3D(tiles) {
   const moveDrag = (x) => {
     if (!dragging) return;
     const dx = x - lastX;
-    if (Math.abs(dx) > 4) moved = true;
+    if (Math.abs(dx) > 4) {
+      moved = true;
+      autoPauseUntil = 0;
+    }
     vel = dx * 0.34;
     angle += vel;
     lastX = x;
@@ -511,6 +532,7 @@ export function initRing3D(tiles) {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 3) {
       e.preventDefault();
       targetAngle = null;
+      autoPauseUntil = 0;
       angle -= e.deltaX * 0.22;
     }
   }, { passive: false });
@@ -531,6 +553,13 @@ export function initRing3D(tiles) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
     });
   });
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => snapToIndex((activeShown < 0 ? 0 : activeShown) - 1));
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => snapToIndex((activeShown < 0 ? 0 : activeShown) + 1));
+  }
 
   stage.addEventListener("keydown", (e) => {
     const norm = ((-angle % 360) + 360) % 360;
